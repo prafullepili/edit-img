@@ -1,0 +1,105 @@
+export const controlGroups = [
+  {
+    title: "LIGHT",
+    icon: "sun",
+    controls: [
+      ["exposure", "Exposure", -100, 100],
+      ["contrast", "Contrast", -100, 100],
+      ["highlights", "Highlights", -100, 100],
+      ["shadows", "Shadows", -100, 100],
+    ],
+  },
+  {
+    title: "COLOR",
+    icon: "sparkle",
+    controls: [
+      ["saturation", "Saturation", -100, 100],
+      ["temperature", "Temperature", -100, 100],
+      ["tint", "Tint", -100, 100],
+    ],
+  },
+  {
+    title: "DETAIL",
+    icon: "grid",
+    controls: [
+      ["clarity", "Clarity", -100, 100],
+      ["vignette", "Vignette", 0, 100],
+      ["grain", "Grain", 0, 100],
+    ],
+  },
+];
+export const presets = [
+  { name: "Original", label: "Original", values: {} },
+  {
+    name: "Golden",
+    label: "Golden hour",
+    values: {
+      exposure: 8,
+      contrast: 12,
+      highlights: -15,
+      shadows: 12,
+      saturation: 12,
+      temperature: 26,
+      tint: 4,
+      clarity: 8,
+      vignette: 12,
+    },
+  },
+  {
+    name: "Soft",
+    label: "Soft light",
+    values: {
+      exposure: 8,
+      contrast: -14,
+      highlights: -25,
+      shadows: 24,
+      saturation: -8,
+      temperature: 10,
+      clarity: -10,
+      vignette: 0,
+    },
+  },
+  {
+    name: "Noir",
+    label: "Noir",
+    values: {
+      exposure: 0,
+      contrast: 28,
+      highlights: -5,
+      shadows: -5,
+      saturation: -100,
+      temperature: 0,
+      clarity: 18,
+      vignette: 30,
+    },
+  },
+  {
+    name: "Cinematic",
+    label: "Cinematic",
+    values: {
+      exposure: -4,
+      contrast: 20,
+      highlights: -30,
+      shadows: 15,
+      saturation: -18,
+      temperature: -8,
+      tint: 8,
+      clarity: 12,
+      vignette: 24,
+    },
+  },
+  {
+    name: "Fade",
+    label: "Matte fade",
+    values: {
+      exposure: 5,
+      contrast: -22,
+      highlights: -8,
+      shadows: 20,
+      saturation: -12,
+      temperature: 4,
+      clarity: -6,
+      vignette: 8,
+    },
+  },
+];
