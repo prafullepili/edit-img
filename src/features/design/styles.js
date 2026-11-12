@@ -96,7 +96,16 @@ export function textLayerChanges(changes, canvasWidth) {
 export function drawStyledText(
   ctx,
   value,
-  { x, y, width, height, size, scale = 1, centered = false },
+  {
+    x,
+    y,
+    width,
+    height,
+    size,
+    scale = 1,
+    centered = false,
+    lines: cachedLines,
+  },
 ) {
   const s = textStyle(value);
   ctx.save();
@@ -107,7 +116,7 @@ export function drawStyledText(
   ctx.lineJoin = "round";
   if (s.blur > 0) ctx.filter = `blur(${s.blur * scale}px)`;
   const spacing = s.letterSpacing * scale,
-    lines = textLines(ctx, value.text, width, spacing),
+    lines = cachedLines || textLines(ctx, value.text, width, spacing),
     lineHeight = size * s.lineHeight;
   if (s.shadow) {
     ctx.shadowColor = shadowRgba(s);

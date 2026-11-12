@@ -153,3 +153,6 @@ The GitHub Actions workflow in `.github/workflows/pages.yml` installs the locked
 Live URL: https://prafullepili.github.io/edit-img/
 
 Use `npm run build:pages` to produce the Pages build locally. Standard `npm run dev` and `npm run build` retain the root `/` base for local use. Site photos/projects stay in the visitor's browser storage, independently for each site origin.
+
+
+Text previews render only the glyph bounds plus blur/shadow padding, at the displayed size (up to 2x pixel density), instead of a photo-sized 1600px canvas. Text wrapping is cached across line-spacing/outline/blur changes and passed into the shared renderer. Moving a layer reuses its painted text when its style is unchanged. Export continues to use full-resolution text rendering.

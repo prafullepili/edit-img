@@ -10,7 +10,7 @@ try {
   await build({
     stdin: {
       contents:
-        "export * from './src/features/design/styles';export * from './src/features/design/catalog';export * from './src/features/design/templateData';",
+        "export * from './src/features/design/styles';export * from './src/features/design/catalog';export * from './src/features/design/templateData';export * from './src/features/design/textPreviewSurface';",
       resolveDir: process.cwd(),
     },
     outfile: file,
@@ -34,6 +34,7 @@ try {
     textEditorValue,
     textLayerChanges,
     textEffectPadding,
+    textPreviewSurface,
   } = createRequire(import.meta.url)(file);
   const calls = [],
     ctx = {
@@ -211,6 +212,56 @@ try {
   assert.ok(
     textEffectPadding({ blur: 6, shadow: true, shadowBlur: 8 }) >= 34,
     "Blur and shadow have room outside the text box",
+  );
+  const surfaceOptions = {
+    bounds: { x: 100, y: 900, width: 400, height: 62 },
+    padding: 50,
+    width: 1800,
+    height: 1200,
+    displayWidth: 360,
+    pixelRatio: 3,
+  };
+  const phoneSurface = textPreviewSurface(surfaceOptions);
+  assert.equal(phoneSurface.pixelWidth, 200);
+  assert.equal(phoneSurface.pixelHeight, 65);
+  assert.ok(
+    phoneSurface.pixelWidth * phoneSurface.pixelHeight < (1600 * 1067) / 40,
+    "Phone text preview avoids allocating a photo-sized blur surface",
+  );
+  assert.deepEqual(
+    phoneSurface,
+    textPreviewSurface({ ...surfaceOptions, pixelRatio: 2 }),
+    "Preview density is capped without changing export",
+  );
+  assert.equal(phoneSurface.left, (50 / 1800) * 100);
+  assert.equal(phoneSurface.top, (850 / 1200) * 100);
+  let measurements = 0;
+  const cachedCtx = {
+    ...ctx,
+    measureText(text) {
+      measurements++;
+      return { width: text.length * 10 };
+    },
+  };
+  drawStyledText(
+    cachedCtx,
+    { text: "A".repeat(2000), color: "#fff", blur: 12 },
+    {
+      x: 0,
+      y: 0,
+      width: 300,
+      height: 100,
+      size: 30,
+      lines: ["Cached line one", "Cached line two"],
+    },
+  );
+  assert.equal(
+    measurements,
+    2,
+    "Effect updates reuse text wrapping instead of measuring every character",
+  );
+  console.log(
+    "Passed: cropped phone preview surfaces, bounded pixel density, reused text layout for effect changes.",
   );
   console.log(
     "Passed: consistent text size conversions, shared blur/shadow rendering, effect padding.",
