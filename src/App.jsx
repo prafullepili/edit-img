@@ -32,6 +32,7 @@ const ExportDialog = lazy(() => import("./features/export/ExportDialog"));
 
 const DesignLibrary = lazy(() => import("./features/design/DesignLibrary"));
 const ProjectsPanel = lazy(() => import("./features/projects/ProjectsPanel"));
+const ShortcutGuide = lazy(() => import("./features/projects/ShortcutGuide"));
 const tools = [
   { id: "projects", name: "Projects", icon: "save" },
   { id: "assets", name: "Assets", icon: "assets" },
@@ -61,6 +62,7 @@ function App() {
   const [toast, setToast] = useState("");
   const [dragging, setDragging] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [guides, setGuides] = useState([]);
   const [working, setWorking] = useState(false);
   const layerImages = useLayerImages(editor.layers);
@@ -235,6 +237,10 @@ function App() {
         ["INPUT", "TEXTAREA", "SELECT"].includes(focused?.tagName) ||
         focused?.isContentEditable;
       if (e.defaultPrevented || e.isComposing) return;
+      if (document.querySelector("[data-shortcut-guide]")) {
+        if (e.key === "Escape") setShortcutsOpen(false);
+        return;
+      }
       if (
         !editing &&
         !e.repeat &&
@@ -267,7 +273,7 @@ function App() {
       }
       if (!editing && e.key === "?") {
         e.preventDefault();
-        dispatch(actions.setTool("projects"));
+        setShortcutsOpen(true);
       }
       if (!editing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
         e.preventDefault();
@@ -411,6 +417,14 @@ function App() {
             }}
           >
             <Icon name="reset" size={15} /> Reset
+          </button>
+          <button
+            className="shortcut-help-button"
+            title="Keyboard shortcuts (?)"
+            aria-label="Open keyboard shortcuts"
+            onClick={() => setShortcutsOpen(true)}
+          >
+            i
           </button>
           <button
             className="button primary export-button"
@@ -926,6 +940,11 @@ function App() {
           </span>
           {toast}
         </div>
+      )}
+      {shortcutsOpen && (
+        <Suspense fallback={<div className="modal-backdrop" />}>
+          <ShortcutGuide onClose={() => setShortcutsOpen(false)} />
+        </Suspense>
       )}
       {exportOpen && (
         <Suspense

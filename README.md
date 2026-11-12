@@ -165,3 +165,6 @@ The complete Text & watermark settings layout is shared with selected text layer
 
 
 The editor starts with an upload prompt rather than a bundled/remote sample photo. Uploaded local projects still restore normally. Old demo drafts remain in Past edits but are not automatically opened at startup. Blank projects are not autosaved, and resetting/deleting the current project returns to the empty upload state.
+
+
+The small information button beside Export opens the keyboard shortcut guide on desktop and phones. Press ? to open the same guide; Escape or the close button dismisses it and restores focus. The Projects panel shares the same shortcut list.

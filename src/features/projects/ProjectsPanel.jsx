@@ -1,3 +1,4 @@
+import ShortcutList from "./ShortcutList";
 import { newId } from "../../ids.js";
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -301,29 +302,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
           </button>
         )}
         <h2>Keyboard shortcuts</h2>
-        <p>
-          Ctrl/⌘ Z: Undo
-          <br />
-          Ctrl/⌘ Shift Z or Ctrl Y: Redo
-          <br />
-          Ctrl/⌘ S: open version history
-          <br />
-          Ctrl/⌘ E: export dialog
-          <br />
-          ?: open this guide
-          <br />
-          Esc: close dialogs
-          <br />
-          Alt-drag: bypass snapping
-          <br />
-          Shift-rotate: snap 15°
-          <br />
-          Arrow keys on handles: resize/rotate
-          <br />
-          Delete / Backspace: delete selected layer; groups require confirmation
-          <br />
-          Ctrl/⌘ Z: restore deleted layer
-        </p>
+        <ShortcutList />
         {busy && <p role="status">Working…</p>}
       </div>
     </div>
