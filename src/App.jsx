@@ -190,6 +190,21 @@ function App() {
       };
     }
   };
+  const handleCanvasWheel = (event) => {
+    if (!event.ctrlKey || !window.matchMedia("(pointer: fine)").matches) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const focusX = event.clientX - (rect.left + rect.width / 2);
+    const focusY = event.clientY - (rect.top + rect.height / 2);
+    const nextZoom = Math.max(10, editor.zoom * Math.exp(-event.deltaY * 0.002));
+    const ratio = nextZoom / editor.zoom;
+    dispatch(actions.setZoom(nextZoom));
+    setCanvasPan({
+      x: focusX - (focusX - canvasPan.x) * ratio,
+      y: focusY - (focusY - canvasPan.y) * ratio,
+    });
+  };
   useEffect(() => {
     const node = workbenchRef.current;
     if (!node) return undefined;
@@ -753,6 +768,7 @@ function App() {
             onPointerMove={handleCanvasPointerMove}
             onPointerUp={handleCanvasPointerUp}
             onPointerCancel={handleCanvasPointerUp}
+            onWheel={handleCanvasWheel}
           >
             <div className="canvas-grid" />
             <div
