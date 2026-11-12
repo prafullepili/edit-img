@@ -1,4 +1,3 @@
-import ShortcutList from "./ShortcutList";
 import { newId } from "../../ids.js";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -349,8 +348,6 @@ export default function ProjectsPanel({ announce, dimensions }) {
           </button>
         )}
         </>}
-        <h2>Keyboard shortcuts</h2>
-        <ShortcutList />
         {busy && <p role="status">Working…</p>}
       </div>
     </div>
