@@ -27,7 +27,7 @@ const encode = (blob) =>
     r.onerror = reject;
     r.readAsDataURL(blob);
   });
-export default function ProjectsPanel({ announce, dimensions }) {
+export default function ProjectsPanel({ announce, dimensions, onAdd }) {
   const resultUrls = useRef([]);
   const announceRef = useRef(announce);
   announceRef.current = announce;
@@ -40,6 +40,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
     [busy, setBusy] = useState(false),
     [size, setSize] = useState(1200),
     [results, setResults] = useState([]);
+  const hasImage = Boolean(e.imageUrl || e.baseAssetId || e.isUploaded);
   const refresh = useCallback(async () => {
     setTrash(await records("trash:"));
     setVersions(await records(`version:${e.projectId}:`));
@@ -89,6 +90,18 @@ export default function ProjectsPanel({ announce, dimensions }) {
     <div className="inspector-scroll">
       <div className="space-y-4 py-4 text-xs">
         <LocalStorageManager announce={announce} />
+        {!hasImage && (
+          <div className="rounded-lg border border-[#393a31] bg-[#1b1c18] p-4">
+            <h2 className="text-sm font-semibold text-[#eeeee5]">Start a project</h2>
+            <p className="mt-1 text-[10px] leading-relaxed text-[#999b90]">
+              Choose a photo to unlock versions, editing, and export tools.
+            </p>
+            <button className="button mt-3 w-full" onClick={onAdd}>
+              Choose a photo
+            </button>
+          </div>
+        )}
+        {hasImage && <>
         <h2>Named versions</h2>
         <input
           aria-label="Version name"
@@ -158,6 +171,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
             </button>
           </div>
         ))}
+        </>}
         <h2>Deleted projects</h2>
         {trash.map((r) => (
           <button
@@ -175,6 +189,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
           </button>
         ))}
         {!trash.length && <p>No deleted projects.</p>}
+        {hasImage && <>
         <h2>Export individual layer</h2>
         <button
           className="button w-full"
@@ -333,6 +348,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
             Download all ({results.length})
           </button>
         )}
+        </>}
         <h2>Keyboard shortcuts</h2>
         <ShortcutList />
         {busy && <p role="status">Working…</p>}

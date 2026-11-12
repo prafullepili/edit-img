@@ -1085,17 +1085,19 @@ function App() {
             >
               {mobileLayout === "controls" ? "Split view" : "Expand controls"}
             </button>
-            <button
-              className="more-button"
-              title="Reset all adjustments"
-              onClick={() => {
-                saveSnapshot();
-                dispatch(actions.reset());
-                announce("Adjustments reset.");
-              }}
-            >
-              <Icon name="reset" size={17} />
-            </button>
+            {(editor.imageUrl || editor.baseAssetId) && (
+              <button
+                className="more-button"
+                title="Reset all adjustments"
+                onClick={() => {
+                  saveSnapshot();
+                  dispatch(actions.reset());
+                  announce("Adjustments reset.");
+                }}
+              >
+                <Icon name="reset" size={17} />
+              </button>
+            )}
           </div>
           <Suspense
             fallback={
@@ -1103,7 +1105,11 @@ function App() {
             }
           >
             {editor.activeTool === "projects" && (
-              <ProjectsPanel dimensions={dimensions} announce={announce} />
+              <ProjectsPanel
+                dimensions={dimensions}
+                announce={announce}
+                onAdd={() => fileRef.current?.click()}
+              />
             )}
             {editor.activeTool === "assets" && (
               <DesignLibrary dimensions={dimensions} announce={announce} />

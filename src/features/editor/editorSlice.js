@@ -16,7 +16,7 @@ const defaults = {
   imageUrl: "",
   imageName: "Upload a photo",
   isUploaded: false,
-  activeTool: "adjust",
+  activeTool: "projects",
   adjustments: {
     exposure: 0,
     contrast: 0,
@@ -63,6 +63,9 @@ function loadProject() {
     return {
       ...defaults,
       ...stored,
+      activeTool: stored.isUploaded || stored.baseAssetId
+        ? stored.activeTool || "adjust"
+        : "projects",
       imageUrl: defaults.imageUrl,
       photo: mergePhoto(stored.photo),
       textLayer: { ...defaults.textLayer, ...stored.textLayer },
@@ -104,6 +107,7 @@ const slice = createSlice({
         imageUrl: action.payload.url,
         imageName: action.payload.name,
         isUploaded: true,
+        activeTool: "adjust",
         history: [],
         future: [],
       };
