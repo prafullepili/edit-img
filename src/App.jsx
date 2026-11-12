@@ -88,6 +88,7 @@ function App() {
     if (editor.activeTool !== "text") setEditingTextId(null);
   }, [editor.activeTool]);
   const cropping = editor.activeTool === "crop";
+  const hasPhoto = Boolean(editor.imageUrl || editor.baseAssetId);
   const photoPreview = usePhotoPreview(editor, {
     uncropped: cropping,
     before: showBefore,
@@ -98,6 +99,7 @@ function App() {
     (layer) => layer.id === editor.selectedLayerId && layer.type === "text",
   );
   const isCanvasGestureTarget = (target) => {
+    if (!hasPhoto) return false;
     if (editor.activeTool === "crop" || editor.activeTool === "retouch") return false;
     if (!(target instanceof Element)) return false;
     if (target.closest("svg, canvas, .on-canvas-text-editor")) return false;
@@ -191,6 +193,7 @@ function App() {
     }
   };
   const handleCanvasWheel = (event) => {
+    if (!hasPhoto) return;
     if (!event.ctrlKey || !window.matchMedia("(pointer: fine)").matches) return;
     event.preventDefault();
     event.stopPropagation();
@@ -447,6 +450,8 @@ function App() {
         ["INPUT", "TEXTAREA", "SELECT"].includes(focused?.tagName) ||
         focused?.isContentEditable;
       if (e.defaultPrevented || e.isComposing) return;
+      const current = store.getState().editor;
+      const canEditPhoto = Boolean(current.imageUrl || current.baseAssetId);
       if (document.querySelector("[data-shortcut-guide]")) {
         if (e.key === "Escape") setShortcutsOpen(false);
         return;
@@ -459,11 +464,11 @@ function App() {
         !e.altKey &&
         ["Delete", "Backspace"].includes(e.key)
       ) {
-        const current = store.getState().editor;
         const layer = current.layers.find(
           (item) => item.id === current.selectedLayerId,
         );
         if (
+          canEditPhoto &&
           current.activeTool === "layers" &&
           layer &&
           !document.querySelector('[role="dialog"], dialog[open]')
@@ -473,11 +478,11 @@ function App() {
           return;
         }
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !editing) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !editing && canEditPhoto) {
         e.preventDefault();
         dispatch(e.shiftKey ? actions.redo() : actions.undo());
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y" && !editing) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y" && !editing && canEditPhoto) {
         e.preventDefault();
         dispatch(actions.redo());
       }
@@ -487,12 +492,14 @@ function App() {
       }
       if (!editing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
         e.preventDefault();
-        setExportOpen(true);
+        if (canEditPhoto) setExportOpen(true);
+        else announce("Choose a photo before exporting.");
       }
       if (!editing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         dispatch(actions.setTool("projects"));
-        window.dispatchEvent(new Event("luma-create-version"));
+        if (canEditPhoto)
+          window.dispatchEvent(new Event("luma-create-version"));
       }
       if (e.key === "Escape") {
         setExportOpen(false);
@@ -502,7 +509,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dispatch]);
+  }, [announce, dispatch]);
 
   useEffect(() => {
     let active = true;
@@ -605,6 +612,7 @@ function App() {
             className="icon-button history-button"
             title="Undo (Ctrl+Z)"
             aria-label="Undo"
+            disabled={!hasPhoto}
             onClick={() => dispatch(actions.undo())}
           >
             <Icon name="undo" />
@@ -613,6 +621,7 @@ function App() {
             className="icon-button history-button"
             title="Redo (Ctrl+Shift+Z)"
             aria-label="Redo"
+            disabled={!hasPhoto}
             onClick={() => dispatch(actions.redo())}
           >
             <Icon name="redo" />
@@ -620,6 +629,7 @@ function App() {
           <span className="top-separator" />
           <button
             className="button subtle reset-button"
+            disabled={!hasPhoto}
             onClick={() => {
               saveSnapshot();
               dispatch(actions.reset());
@@ -638,7 +648,11 @@ function App() {
           </button>
           <button
             className="button primary export-button"
-            onClick={() => setExportOpen(true)}
+            disabled={!hasPhoto}
+            onClick={() => {
+              if (hasPhoto) setExportOpen(true);
+              else announce("Choose a photo before exporting.");
+            }}
           >
             <Icon name="download" size={16} /> Export
           </button>
@@ -651,11 +665,13 @@ function App() {
               <button
                 key={tool.id}
                 className={`rail-tool ${editor.activeTool === tool.id ? "active" : ""}`}
+                disabled={!hasPhoto && tool.id !== "projects"}
                 onClick={() => {
+                  if (!hasPhoto && tool.id !== "projects") return;
                   dispatch(actions.setTool(tool.id));
                   if (mobileLayout === "photo") setMobileLayout("balanced");
                 }}
-                title={tool.name}
+                title={!hasPhoto && tool.id !== "projects" ? "Choose a photo to use this tool" : tool.name}
               >
                 <Icon name={tool.icon} />
                 <span>{tool.name}</span>
@@ -666,6 +682,7 @@ function App() {
             <button
               className="rail-tool"
               title="Image details"
+              disabled={!hasPhoto}
               onClick={() =>
                 announce(
                   `${photoPreview.sourceWidth} × ${photoPreview.sourceHeight} px`,
@@ -704,6 +721,7 @@ function App() {
                 }
                 title={mobileLayout === "photo" ? "Split view" : "Expand photo"}
                 aria-pressed={mobileLayout === "photo"}
+                disabled={!hasPhoto}
                 onClick={() =>
                   setMobileLayout((value) =>
                     value === "photo" ? "balanced" : "photo",
@@ -728,6 +746,7 @@ function App() {
                 onPointerUp={() => setShowBefore(false)}
                 onPointerLeave={() => setShowBefore(false)}
                 title="Hold to compare with original"
+                disabled={!hasPhoto}
               >
                 <Icon name="compare" size={16} />
                 <span>Compare</span>
@@ -736,6 +755,7 @@ function App() {
               <button
                 className="zoom-btn"
                 aria-label="Zoom out"
+                  disabled={!hasPhoto}
                   onClick={() => dispatch(actions.setZoom(Math.max(10, editor.zoom - 10)))}
               >
                 <Icon name="zoomOut" size={16} />
@@ -744,6 +764,7 @@ function App() {
                 className="zoom-value"
                 aria-label="Reset canvas zoom"
                 title="Reset zoom and position"
+                disabled={!hasPhoto}
                 onClick={() => {
                   dispatch(actions.setZoom(100));
                   setCanvasPan({ x: 0, y: 0 });
@@ -754,6 +775,7 @@ function App() {
               <button
                 className="zoom-btn"
                 aria-label="Zoom in"
+                disabled={!hasPhoto}
                   onClick={() => dispatch(actions.setZoom(editor.zoom + 10))}
               >
                 <Icon name="zoomIn" size={16} />

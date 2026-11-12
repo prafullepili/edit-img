@@ -161,6 +161,16 @@ input:focus-visible {
 .history-button:disabled {
   opacity: 0.35;
 }
+.rail-tool:disabled,
+.zoom-btn:disabled,
+.zoom-value:disabled,
+.canvas-action:disabled,
+.reset-button:disabled,
+.export-button:disabled,
+.rail-bottom .rail-tool:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
 .top-separator,
 .toolbar-rule {
   height: 21px;

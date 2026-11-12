@@ -145,7 +145,10 @@ const slice = createSlice({
       state.projectTitle = action.payload.slice(0, 80);
     },
     setTool(state, action) {
-      state.activeTool = action.payload;
+      state.activeTool =
+        !state.imageUrl && !state.baseAssetId && action.payload !== "projects"
+          ? "projects"
+          : action.payload;
     },
     setAdjustment(state, action) {
       state.adjustments[action.payload.key] = Number(action.payload.value);
