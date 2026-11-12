@@ -115,9 +115,9 @@ Design code is split into `src/features/design/`: `TextControls.jsx`, `ShapeCont
 
 ## Project management
 
-Open **Projects** for named versions, deleted-project recovery, editable `.luma.json` files, individual-layer PNG export, and batch resizing. Past edits also shows **Undo delete** after removing a project. Deleted projects and their assets stay in local storage until recovered or browser site data is cleared.
+Open **Projects** for named versions, deleted-project recovery, importing existing `.luma.json` files, individual-layer PNG export, and batch resizing. Past edits also shows **Undo delete** after removing a project. Deleted projects and their assets stay in local storage until recovered or browser site data is cleared.
 
-Named versions are explicit local snapshots with date/time labels. Editable project files embed source and image-layer assets; imports create a new project. Individual layers export on a transparent canvas at the project output dimensions. Batch resizing preserves aspect ratio, avoids upscaling, and provides per-file download links plus Download all (the browser may request permission for multiple downloads). Batch processing resizes source images without applying the current project's edits.
+Named versions are explicit local snapshots with date/time labels. Existing editable project files can still be imported as new projects. Individual layers export on a transparent canvas at the project output dimensions. Batch resizing preserves aspect ratio, avoids upscaling, and provides per-file download links plus Download all (the browser may request permission for multiple downloads). Batch processing resizes source images without applying the current project's edits.
 
 Press **?** to open the shortcut guide, **Ctrl/⌘ S** to open project history, or **Ctrl/⌘ E** for the export dialog. Text inputs retain normal typing shortcuts.
 

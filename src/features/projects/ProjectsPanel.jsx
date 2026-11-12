@@ -136,22 +136,6 @@ export default function ProjectsPanel({ announce, dimensions }) {
     <div className="inspector-scroll">
       <div className="space-y-4 py-4 text-xs">
         <h2>Editable project file</h2>
-        <button
-          className="button w-full"
-          disabled={busy}
-          onClick={() =>
-            run(async () =>
-              download(
-                new Blob([JSON.stringify(await pack())], {
-                  type: "application/json",
-                }),
-                `${e.projectTitle || "project"}.luma.json`,
-              ),
-            )
-          }
-        >
-          Export editable project
-        </button>
         <label className="block">
           Import .luma.json
           <input
