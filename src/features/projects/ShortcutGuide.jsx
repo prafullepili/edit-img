@@ -10,7 +10,7 @@ export default function ShortcutGuide({ onClose }) {
     return () => previous?.focus?.({ preventScroll: true });
   }, []);
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop shortcut-backdrop" onClick={onClose}>
       <section
         ref={dialog}
         data-shortcut-guide
