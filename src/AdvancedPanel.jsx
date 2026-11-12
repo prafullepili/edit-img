@@ -2,10 +2,10 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { actions } from "./store";
 import SettingRange from "./components/SettingRange";
-import { TextAlignmentControl } from "./features/design/TextControls";
-import TextEditorControls from "./features/design/TextEditorControls";
+import TextSettings from "./features/design/TextSettings";
+import { textPositionChanges } from "./features/design/textPosition";
 import { textEditorValue, textLayerChanges } from "./features/design/styles";
-import { isLayerLocked, alignSelection } from "./layerEditing";
+import { isLayerLocked } from "./layerEditing";
 
 const field =
   "w-full rounded-md border border-[#393a31] bg-[#22231e] px-3 py-2 text-xs text-[#eeeee5] focus:border-[#c8ef69]";
@@ -63,10 +63,6 @@ export default function AdvancedPanel({ type, dimensions }) {
       <div className="space-y-5 pt-5 text-xs">
         {type === "text" ? (
           <>
-            <p className="text-[11px] leading-relaxed text-[#999b90]">
-              Drag text on the photo to move it. Double-tap it, or tap Edit text
-              on the photo, to type directly.
-            </p>
             {selectedText && (
               <div className="flex items-center justify-between gap-2 text-[10px]">
                 <span className="truncate">Editing {selectedText.name}</span>
@@ -87,72 +83,27 @@ export default function AdvancedPanel({ type, dimensions }) {
               disabled={locked}
               className="space-y-4 disabled:opacity-40"
             >
-              <label className="flex items-center justify-between">
-                <span>Show text layer</span>
-                <input
-                  type="checkbox"
-                  checked={
-                    selectedText ? selectedText.visible : e.textLayer.enabled
-                  }
-                  onChange={(event) =>
-                    update(
-                      selectedText
-                        ? { visible: event.target.checked }
-                        : { enabled: event.target.checked },
-                    )
-                  }
-                  className="accent-[#c8ef69]"
-                />
-              </label>
-              <TextEditorControls
+              <TextSettings
                 value={value}
+                visible={
+                  selectedText ? selectedText.visible : e.textLayer.enabled
+                }
+                onVisibilityChange={(visible) =>
+                  update(selectedText ? { visible } : { enabled: visible })
+                }
                 onChange={update}
-                showAlignment={false}
+                onPosition={(vertical, horizontal) =>
+                  update(
+                    textPositionChanges(
+                      selectedText,
+                      e.layers,
+                      vertical,
+                      horizontal,
+                      dimensions.width / dimensions.height,
+                    ),
+                  )
+                }
               />
-              <div>
-                <p className="mb-2 text-[#999b90]">Position</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {["top", "middle", "bottom"].flatMap((v) =>
-                    ["left", "center", "right"].map((h) => (
-                      <button
-                        key={`${v}-${h}`}
-                        aria-label={`${v} ${h}`}
-                        className={`h-9 rounded border text-xs ${(selectedText ? selectedText.position : e.textLayer.position) === `${v}-${h}` ? "border-[#c8ef69] bg-[#303923] text-[#c8ef69]" : "border-[#393a31] bg-[#22231e]"}`}
-                        onClick={() =>
-                          update(
-                            selectedText
-                              ? {
-                                  ...alignSelection(
-                                    selectedText,
-                                    e.layers,
-                                    h,
-                                    dimensions.width / dimensions.height,
-                                  ),
-                                  ...alignSelection(
-                                    selectedText,
-                                    e.layers,
-                                    v,
-                                    dimensions.width / dimensions.height,
-                                  ),
-                                  position: `${v}-${h}`,
-                                  textAlign: h,
-                                }
-                              : {
-                                  position: `${v}-${h}`,
-                                  textAlign: h,
-                                  offsetX: 0,
-                                  offsetY: 0,
-                                },
-                          )
-                        }
-                      >
-                        ↗
-                      </button>
-                    )),
-                  )}
-                </div>
-              </div>
-              <TextAlignmentControl value={value} onChange={update} />
             </fieldset>
           </>
         ) : (

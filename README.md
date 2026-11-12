@@ -159,3 +159,6 @@ Text previews render only the glyph bounds plus blur/shadow padding, at the disp
 
 
 Deleting a grouped layer prompts for confirmation and removes the entire group in one undoable operation. This applies to the row trash icon, Delete group button, and Delete/Backspace shortcuts. Cancel does not change layers or history. Locked groups cannot be deleted; ungroup first to remove only one member.
+
+
+The complete Text & watermark settings layout is shared with selected text layers in Layers through TextSettings: visibility, content, color, pixel size, opacity, typography/effects, Position, then text alignment. Text layers no longer duplicate the generic layer opacity/alignment controls. Layer masks, zoom and transform controls remain available below text settings.

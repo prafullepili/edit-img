@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { actions, store } from "./store";
 import { saveImage } from "./imageStorage";
 import { layerDefaults, getLayerScale } from "./layers";
-import TextEditorControls from "./features/design/TextEditorControls";
+import TextSettings from "./features/design/TextSettings";
+import { textPositionChanges } from "./features/design/textPosition";
 import { textEditorValue, textLayerChanges } from "./features/design/styles";
 import ShapeControls from "./features/design/ShapeControls";
 import ShapePicker from "./features/design/ShapePicker";
@@ -498,7 +499,10 @@ export default function LayersPanel({ dimensions, announce }) {
           {e.textLayer.enabled && (
             <button
               className={`${buttonClass} w-full text-left`}
-              onClick={() => dispatch(actions.setTool("text"))}
+              onClick={() => {
+                dispatch(actions.selectLayer(null));
+                dispatch(actions.setTool("text"));
+              }}
             >
               Primary text / watermark · Edit in Text
             </button>
@@ -524,27 +528,29 @@ export default function LayersPanel({ dimensions, announce }) {
             </button>
           </div>
         </div>
-        <fieldset
-          disabled={!!selected && locked}
-          aria-label="Opacity"
-          className="rounded border border-[#393a31] px-2.5 py-2 disabled:opacity-40"
-        >
-          <div
-            className="mb-1 truncate text-right text-[10px] text-[#a4a894]"
-            title={selected?.name || "Base photo"}
+        {selected?.type !== "text" && (
+          <fieldset
+            disabled={!!selected && locked}
+            aria-label="Opacity"
+            className="rounded border border-[#393a31] px-2.5 py-2 disabled:opacity-40"
           >
-            {selected?.name || "Base photo"}
-          </div>
-          <SettingRange
-            label="Opacity"
-            min={0}
-            max={100}
-            unit="%"
-            value={selected ? (selected.opacity ?? 100) : e.baseOpacity}
-            onStart={() => dispatch(actions.snapshot())}
-            onChange={setOpacity}
-          />
-        </fieldset>
+            <div
+              className="mb-1 truncate text-right text-[10px] text-[#a4a894]"
+              title={selected?.name || "Base photo"}
+            >
+              {selected?.name || "Base photo"}
+            </div>
+            <SettingRange
+              label="Opacity"
+              min={0}
+              max={100}
+              unit="%"
+              value={selected ? (selected.opacity ?? 100) : e.baseOpacity}
+              onStart={() => dispatch(actions.snapshot())}
+              onChange={setOpacity}
+            />
+          </fieldset>
+        )}
         {selected && (
           <div className="space-y-3 border-t border-[#393a31] pt-4">
             {locked && (
@@ -560,38 +566,67 @@ export default function LayersPanel({ dimensions, announce }) {
               disabled={locked}
               className="space-y-3 disabled:opacity-40"
             >
-              <fieldset className="space-y-2 rounded border border-[#393a31] p-3">
-                <legend>Align to canvas</legend>
-                <div
-                  className="grid grid-cols-6 gap-1"
-                  role="group"
-                  aria-label="Align selected layer to canvas"
-                >
-                  {["left", "center", "right", "top", "middle", "bottom"].map(
-                    (mode) => (
-                      <button
-                        key={mode}
-                        title={alignmentLabels[mode]}
-                        aria-label={alignmentLabels[mode]}
-                        className={`${buttonClass} flex justify-center !px-1 !py-2 hover:bg-[#29311f]`}
-                        onClick={() =>
-                          edit(
-                            selected.id,
-                            alignSelection(
-                              selected,
-                              e.layers,
-                              mode,
-                              dimensions.width / dimensions.height,
-                            ),
-                          )
-                        }
-                      >
-                        <AlignmentIcon mode={mode} />
-                      </button>
-                    ),
-                  )}
-                </div>
-              </fieldset>
+              {selected.type === "text" && (
+                <TextSettings
+                  value={textEditorValue(selected, dimensions.width)}
+                  visible={selected.visible}
+                  onVisibilityChange={(visible) =>
+                    edit(selected.id, { visible })
+                  }
+                  onChange={(changes) =>
+                    edit(
+                      selected.id,
+                      textLayerChanges(changes, dimensions.width),
+                    )
+                  }
+                  onPosition={(vertical, horizontal) =>
+                    edit(
+                      selected.id,
+                      textPositionChanges(
+                        selected,
+                        e.layers,
+                        vertical,
+                        horizontal,
+                        dimensions.width / dimensions.height,
+                      ),
+                    )
+                  }
+                />
+              )}
+              {selected.type !== "text" && (
+                <fieldset className="space-y-2 rounded border border-[#393a31] p-3">
+                  <legend>Align to canvas</legend>
+                  <div
+                    className="grid grid-cols-6 gap-1"
+                    role="group"
+                    aria-label="Align selected layer to canvas"
+                  >
+                    {["left", "center", "right", "top", "middle", "bottom"].map(
+                      (mode) => (
+                        <button
+                          key={mode}
+                          title={alignmentLabels[mode]}
+                          aria-label={alignmentLabels[mode]}
+                          className={`${buttonClass} flex justify-center !px-1 !py-2 hover:bg-[#29311f]`}
+                          onClick={() =>
+                            edit(
+                              selected.id,
+                              alignSelection(
+                                selected,
+                                e.layers,
+                                mode,
+                                dimensions.width / dimensions.height,
+                              ),
+                            )
+                          }
+                        >
+                          <AlignmentIcon mode={mode} />
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </fieldset>
+              )}
               <fieldset className="space-y-2 rounded border border-[#393a31] p-3">
                 <legend>Visibility mask</legend>
                 <label className="flex justify-between">
@@ -677,18 +712,6 @@ export default function LayersPanel({ dimensions, announce }) {
                   borders.
                 </p>
               </fieldset>
-              {selected.type === "text" && (
-                <TextEditorControls
-                  value={textEditorValue(selected, dimensions.width)}
-                  showOpacity={false}
-                  onChange={(changes) =>
-                    edit(
-                      selected.id,
-                      textLayerChanges(changes, dimensions.width),
-                    )
-                  }
-                />
-              )}
               {isShape(selected.type) && (
                 <ShapeControls
                   value={selected}

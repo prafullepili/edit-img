@@ -10,7 +10,7 @@ try {
   await build({
     stdin: {
       contents:
-        "export * from './src/features/design/styles';export * from './src/features/design/catalog';export * from './src/features/design/templateData';export * from './src/features/design/textPreviewSurface';",
+        "export * from './src/features/design/styles';export * from './src/features/design/catalog';export * from './src/features/design/templateData';export * from './src/features/design/textPreviewSurface';export * from './src/features/design/textPosition';",
       resolveDir: process.cwd(),
     },
     outfile: file,
@@ -35,6 +35,7 @@ try {
     textLayerChanges,
     textEffectPadding,
     textPreviewSurface,
+    textPositionChanges,
   } = createRequire(import.meta.url)(file);
   const calls = [],
     ctx = {
@@ -259,6 +260,39 @@ try {
     measurements,
     2,
     "Effect updates reuse text wrapping instead of measuring every character",
+  );
+  assert.deepEqual(textPositionChanges(null, [], "top", "right", 2), {
+    position: "top-right",
+    textAlign: "right",
+    offsetX: 0,
+    offsetY: 0,
+  });
+  const positionedLayer = {
+    id: "text",
+    type: "text",
+    x: 50,
+    y: 50,
+    width: 40,
+    height: 20,
+    rotation: 0,
+    scale: 1,
+  };
+  assert.deepEqual(
+    textPositionChanges(positionedLayer, [positionedLayer], "top", "left", 2),
+    { x: 20, y: 10, position: "top-left", textAlign: "left" },
+  );
+  assert.deepEqual(
+    textPositionChanges(
+      positionedLayer,
+      [positionedLayer],
+      "bottom",
+      "right",
+      2,
+    ),
+    { x: 80, y: 90, position: "bottom-right", textAlign: "right" },
+  );
+  console.log(
+    "Passed: shared text position presets and alignment for primary text and layer text.",
   );
   console.log(
     "Passed: cropped phone preview surfaces, bounded pixel density, reused text layout for effect changes.",
