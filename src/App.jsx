@@ -33,7 +33,7 @@ const DesignLibrary = lazy(() => import("./features/design/DesignLibrary"));
 const ProjectsPanel = lazy(() => import("./features/projects/ProjectsPanel"));
 const tools = [
   { id: "projects", name: "Projects", icon: "save" },
-  { id: "assets", name: "Assets", icon: "layers" },
+  { id: "assets", name: "Assets", icon: "assets" },
   { id: "adjust", name: "Adjust", icon: "sliders" },
   { id: "crop", name: "Crop", icon: "crop" },
   { id: "background", name: "Cutout", icon: "image" },

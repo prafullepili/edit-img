@@ -24,6 +24,14 @@ const Icon = ({ name, size = 18 }) => {
         <path d="m13 2 .7 1.3L15 4l-1.3.7L13 6l-.7-1.3L11 4l1.3-.7z" />
       </>
     ),
+    assets: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <path d="m17.5 2.5 4 4-4 4-4-4z" />
+        <circle cx="6.5" cy="17.5" r="3.5" />
+        <path d="M14 14h7v7h-7z" />
+      </>
+    ),
     layers: (
       <>
         <path d="m12 2 9 5-9 5-9-5z" />
