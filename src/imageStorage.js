@@ -50,6 +50,7 @@ export async function readImage(projectId) {
 }
 
 export async function saveDraft(editor) {
+  if (!editor.imageUrl && !editor.baseAssetId && !editor.isUploaded) return;
   const pristine =
     !editor.freeCrop &&
     !editor.baseAssetId &&

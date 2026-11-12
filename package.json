@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "format": "prettier --write src scripts vite.config.js",
-    "check": "node scripts/check-layers.mjs && node scripts/check-photo.mjs && node scripts/check-design.mjs && node scripts/check-preview.mjs && node scripts/check-ids.mjs && node scripts/check-slider-gestures.mjs && node scripts/check-group-deletion.mjs",
+    "check": "node scripts/check-layers.mjs && node scripts/check-photo.mjs && node scripts/check-design.mjs && node scripts/check-preview.mjs && node scripts/check-ids.mjs && node scripts/check-slider-gestures.mjs && node scripts/check-group-deletion.mjs && node scripts/check-empty-start.mjs",
     "build:pages": "vite build --mode pages"
   },
   "dependencies": {

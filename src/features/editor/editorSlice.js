@@ -13,9 +13,8 @@ const defaults = {
   selectedLayerId: null,
   baseVisible: true,
   baseOpacity: 100,
-  imageUrl:
-    "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1800&q=90",
-  imageName: "alpine-lake.jpg",
+  imageUrl: "",
+  imageName: "Upload a photo",
   isUploaded: false,
   activeTool: "adjust",
   adjustments: {
@@ -60,6 +59,7 @@ function loadProject() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (!stored || typeof stored !== "object") return defaults;
+    if (!stored.isUploaded && stored.projectId === "demo") return defaults;
     return {
       ...defaults,
       ...stored,

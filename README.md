@@ -162,3 +162,6 @@ Deleting a grouped layer prompts for confirmation and removes the entire group i
 
 
 The complete Text & watermark settings layout is shared with selected text layers in Layers through TextSettings: visibility, content, color, pixel size, opacity, typography/effects, Position, then text alignment. Text layers no longer duplicate the generic layer opacity/alignment controls. Layer masks, zoom and transform controls remain available below text settings.
+
+
+The editor starts with an upload prompt rather than a bundled/remote sample photo. Uploaded local projects still restore normally. Old demo drafts remain in Past edits but are not automatically opened at startup. Blank projects are not autosaved, and resetting/deleting the current project returns to the empty upload state.

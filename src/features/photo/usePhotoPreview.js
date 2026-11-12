@@ -78,6 +78,25 @@ export default function usePhotoPreview(
   const renderCrop = uncropped ? null : freeCrop,
     renderRatio = uncropped ? "Original" : cropRatio;
   useEffect(() => {
+    if (!imageUrl && !baseAssetId) {
+      queue.current.invalidate(null);
+      if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+      previewUrl.current = null;
+      setResult((result) => ({
+        ...result,
+        url: null,
+        sampleCanvas: null,
+        renderedPhoto: null,
+        histogram: null,
+        width: 1800,
+        height: 1200,
+        sourceWidth: 1800,
+        sourceHeight: 1200,
+        busy: false,
+        error: null,
+      }));
+      return;
+    }
     let active = true;
     const controller = new AbortController();
     const settings = {

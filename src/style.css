@@ -2556,5 +2556,32 @@ input:focus-visible {
     border-radius: 4px;
     font-size: 9px;
   }
-  .canvas-text-edit-button svg { width: 11px; height: 11px; }
+  .canvas-text-edit-button svg {
+    width: 11px;
+    height: 11px;
+  }
+}
+
+.empty-photo-prompt {
+  z-index: 75;
+  padding: 14px;
+  text-align: center;
+  gap: 10px;
+  background: #171915;
+}
+.empty-photo-prompt strong {
+  font-size: 14px;
+  color: #e5edda;
+}
+.empty-photo-prompt > span {
+  font-size: 10px;
+  color: #99a28b;
+}
+@media (max-width: 760px) {
+  .empty-photo-prompt {
+    gap: 7px;
+  }
+  .empty-photo-prompt > span {
+    max-width: 220px;
+  }
 }

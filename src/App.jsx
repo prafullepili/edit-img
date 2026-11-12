@@ -203,7 +203,12 @@ function App() {
   };
 
   const download = async () => {
-    if (!loaded) return announce("Wait for the current preview to finish.");
+    if (!loaded)
+      return announce(
+        editor.imageUrl || editor.baseAssetId
+          ? "Wait for the current preview to finish."
+          : "Upload a photo before exporting.",
+      );
     setWorking(true);
     try {
       const { exportImage } = await import("./features/export/exportImage");
@@ -290,7 +295,7 @@ function App() {
         const draft = await readDraft(editor.projectId);
         const saved = draft?.state || editor;
         if (!saved.isUploaded) {
-          if (active && draft)
+          if (active && draft && saved.projectId !== "demo")
             dispatch(
               actions.openDraft({
                 state: saved,
@@ -712,6 +717,23 @@ function App() {
                   onCancel={() => setEditingTextId(null)}
                 />
               )}
+              {!editor.imageUrl &&
+                !editor.baseAssetId &&
+                !editor.isUploaded && (
+                  <div className="image-loading empty-photo-prompt">
+                    <Icon name="image" size={32} />
+                    <strong>Upload a photo to start</strong>
+                    <span>
+                      JPG, PNG, WebP · drag and drop or choose a photo
+                    </span>
+                    <button
+                      className="button primary"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      Choose photo
+                    </button>
+                  </div>
+                )}
               {photoPreview.error && (
                 <div className="image-loading">
                   <span>{photoPreview.error}</span>
@@ -734,9 +756,9 @@ function App() {
                 <span className="status-dot" /> All edits stay on your device
               </span>
               <span>
-                {photoPreview.sourceWidth
+                {editor.imageUrl && photoPreview.sourceWidth
                   ? `${photoPreview.sourceWidth} × ${photoPreview.sourceHeight} px`
-                  : "High resolution"}
+                  : "No photo uploaded"}
               </span>
             </div>
             <button
