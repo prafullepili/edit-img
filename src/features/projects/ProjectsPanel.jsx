@@ -27,7 +27,7 @@ const encode = (blob) =>
     r.onerror = reject;
     r.readAsDataURL(blob);
   });
-export default function ProjectsPanel({ announce, dimensions, onAdd }) {
+export default function ProjectsPanel({ announce, dimensions }) {
   const resultUrls = useRef([]);
   const announceRef = useRef(announce);
   announceRef.current = announce;
@@ -40,7 +40,7 @@ export default function ProjectsPanel({ announce, dimensions, onAdd }) {
     [busy, setBusy] = useState(false),
     [size, setSize] = useState(1200),
     [results, setResults] = useState([]);
-  const hasImage = Boolean(e.imageUrl || e.baseAssetId || e.isUploaded);
+  const hasImage = Boolean(e.imageUrl || e.baseAssetId);
   const refresh = useCallback(async () => {
     setTrash(await records("trash:"));
     setVersions(await records(`version:${e.projectId}:`));
@@ -96,9 +96,9 @@ export default function ProjectsPanel({ announce, dimensions, onAdd }) {
             <p className="mt-1 text-[10px] leading-relaxed text-[#999b90]">
               Choose a photo to unlock versions, editing, and export tools.
             </p>
-            <button className="button mt-3 w-full" onClick={onAdd}>
+            <label className="button mt-3 w-full" htmlFor="photo-upload">
               Choose a photo
-            </button>
+            </label>
           </div>
         )}
         {hasImage && <>

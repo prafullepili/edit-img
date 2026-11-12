@@ -1105,11 +1105,7 @@ function App() {
             }
           >
             {editor.activeTool === "projects" && (
-              <ProjectsPanel
-                dimensions={dimensions}
-                announce={announce}
-                onAdd={() => fileRef.current?.click()}
-              />
+              <ProjectsPanel dimensions={dimensions} announce={announce} />
             )}
             {editor.activeTool === "assets" && (
               <DesignLibrary dimensions={dimensions} announce={announce} />
@@ -1157,6 +1153,7 @@ function App() {
       </div>
       <input
         ref={fileRef}
+        id="photo-upload"
         className="hidden-file"
         type="file"
         accept="image/*"
