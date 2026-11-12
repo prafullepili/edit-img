@@ -100,7 +100,7 @@ export default function LocalStorageManager({ announce }) {
   ).length || 0;
 
   return (
-    <section className="space-y-3 rounded-lg border border-[#393a31] bg-[#1b1c18] p-3" aria-label="Local storage management">
+    <section className="space-y-3" aria-label="Local storage management">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-[#eeeee5]">Local storage</h2>

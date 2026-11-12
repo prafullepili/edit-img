@@ -90,7 +90,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
       <div className="space-y-4 py-4 text-xs">
         <LocalStorageManager announce={announce} />
         {!hasImage && (
-          <div className="rounded-lg border border-[#393a31] bg-[#1b1c18] p-4">
+          <section className="space-y-2">
             <h2 className="text-sm font-semibold text-[#eeeee5]">Start a project</h2>
             <p className="mt-1 text-[10px] leading-relaxed text-[#999b90]">
               Choose a photo to unlock versions, editing, and export tools.
@@ -98,7 +98,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
             <label className="button mt-3 w-full" htmlFor="photo-upload">
               Choose a photo
             </label>
-          </div>
+          </section>
         )}
         {hasImage && <>
         <h2>Named versions</h2>
