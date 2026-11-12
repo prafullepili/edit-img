@@ -16,7 +16,7 @@ function estimateBytes(value) {
 function referencedAssets(value) {
   const state = value?.state || value?.project?.state || value;
   return [
-    state?.projectId,
+    ...(state?.isUploaded && state?.projectId ? [state.projectId] : []),
     state?.baseAssetId,
     ...(state?.layers || []).map((layer) => layer.assetId),
     ...(value?.design?.layers || []).map((layer) => layer.assetId),
@@ -56,14 +56,19 @@ export async function getLocalStorageSummary() {
   };
 }
 
-export async function permanentlyDeleteEdits(ids) {
-  const deleting = new Set(ids);
-  if (!deleting.size) return;
-  let currentId = null;
-  try {
-    currentId = JSON.parse(localStorage.getItem(LOCAL_STATE_KEY) || "null")?.projectId;
-  } catch {}
-  if (currentId && deleting.has(currentId))
+export async function permanentlyDeleteEdits(
+  edits,
+  { currentId, currentHasPhoto } = {},
+) {
+  const selectedRecords = new Map(
+    edits.map((edit) => [`${edit.deleted ? "trash" : "draft"}:${edit.id}`, edit]),
+  );
+  if (!selectedRecords.size) return;
+  if (
+    currentHasPhoto &&
+    currentId &&
+    selectedRecords.has(`draft:${currentId}`)
+  )
     throw new Error("The open edit cannot be permanently removed");
   const db = await openDatabase();
   await new Promise((resolve, reject) => {
@@ -82,12 +87,9 @@ export async function permanentlyDeleteEdits(ids) {
       const candidateAssets = new Set();
       const protectedAssets = new Set();
       for (const { key, value } of entries) {
-        const id = key.startsWith("draft:") || key.startsWith("trash:")
-          ? key.slice(key.indexOf(":") + 1)
-          : null;
-        if (id && deleting.has(id)) {
-          removeKeys.add(`draft:${id}`);
-          removeKeys.add(`trash:${id}`);
+        const selected = selectedRecords.get(key);
+        if (selected) {
+          removeKeys.add(key);
           referencedAssets(value).forEach((asset) => candidateAssets.add(asset));
         } else {
           referencedAssets(value).forEach((asset) => protectedAssets.add(asset));
@@ -95,12 +97,18 @@ export async function permanentlyDeleteEdits(ids) {
       }
       try {
         const current = JSON.parse(localStorage.getItem(LOCAL_STATE_KEY) || "null");
-        referencedAssets(current).forEach((asset) => protectedAssets.add(asset));
+    const activeRecordSelected = current?.projectId && (
+      selectedRecords.has(`draft:${current.projectId}`) ||
+      selectedRecords.has(`trash:${current.projectId}`)
+    );
+    referencedAssets(current)
+      .filter((asset) =>
+        !activeRecordSelected ||
+        currentHasPhoto ||
+        asset !== current.projectId,
+      )
+      .forEach((asset) => protectedAssets.add(asset));
       } catch {}
-      for (const id of deleting) {
-        removeKeys.add(`draft:${id}`);
-        removeKeys.add(`trash:${id}`);
-      }
       for (const asset of candidateAssets)
         if (!protectedAssets.has(asset)) removeKeys.add(`image:${asset}`);
       for (const key of removeKeys) store.delete(key);

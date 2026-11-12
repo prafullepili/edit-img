@@ -17,6 +17,9 @@ function formatBytes(value) {
 
 export default function LocalStorageManager({ announce }) {
   const currentId = useSelector((state) => state.editor.projectId);
+  const currentHasPhoto = useSelector((state) =>
+    Boolean(state.editor.imageUrl || state.editor.baseAssetId),
+  );
   const [summary, setSummary] = useState(null);
   const [selected, setSelected] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -44,7 +47,9 @@ export default function LocalStorageManager({ announce }) {
 
   const removeSelected = async () => {
     const items = summary?.edits.filter(
-      (edit) => selected.includes(edit.id) && edit.id !== currentId,
+      (edit) =>
+        selected.includes(edit.id) &&
+        (!currentHasPhoto || edit.id !== currentId || edit.deleted),
     ) || [];
     if (!items.length) return;
     const bytes = items.reduce((sum, item) => sum + item.bytes, 0);
@@ -59,7 +64,10 @@ export default function LocalStorageManager({ announce }) {
     setBusy(true);
     try {
       await Promise.all(items.map((item) => prepareDraftDeletion(item.id)));
-      await permanentlyDeleteEdits(items.map((item) => item.id));
+      await permanentlyDeleteEdits(
+        items.map((item) => ({ id: item.id, deleted: item.deleted })),
+        { currentId, currentHasPhoto },
+      );
       setSelected([]);
       await refresh();
       announce(`Removed ${items.length} saved edit${items.length === 1 ? "" : "s"} from this device.`);
@@ -87,7 +95,9 @@ export default function LocalStorageManager({ announce }) {
   const quotaPercent = summary?.browserUsage != null && summary.browserQuota
     ? Math.min(100, (summary.browserUsage / summary.browserQuota) * 100)
     : null;
-  const removableCount = summary?.edits.filter((edit) => edit.id !== currentId).length || 0;
+  const removableCount = summary?.edits.filter(
+    (edit) => !currentHasPhoto || edit.id !== currentId || edit.deleted,
+  ).length || 0;
 
   return (
     <section className="space-y-3 rounded-lg border border-[#393a31] bg-[#1b1c18] p-3" aria-label="Local storage management">
@@ -152,7 +162,8 @@ export default function LocalStorageManager({ announce }) {
               {summary.edits.length ? (
                 <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
                   {summary.edits.map((edit) => {
-                    const protectedEdit = edit.id === currentId;
+                    const protectedEdit =
+                      currentHasPhoto && edit.id === currentId && !edit.deleted;
                     return (
                       <div
                         key={`${edit.deleted ? "trash" : "draft"}:${edit.id}`}
