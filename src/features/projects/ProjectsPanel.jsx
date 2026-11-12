@@ -187,7 +187,11 @@ export default function ProjectsPanel({ announce, dimensions }) {
             Restore {r.value.state.projectTitle || r.value.state.imageName}
           </button>
         ))}
-        {!trash.length && <p>No deleted projects.</p>}
+        {!trash.length && (
+          <p className="py-3 text-center text-[10px] text-[#85877d]">
+            No deleted projects.
+          </p>
+        )}
         {hasImage && <>
         <h2>Export individual layer</h2>
         <button
