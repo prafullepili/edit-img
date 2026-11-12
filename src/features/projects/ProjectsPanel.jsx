@@ -3,13 +3,11 @@ import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { actions } from "../../store";
 import SettingRange from "../../components/SettingRange";
-import { shapeTypes } from "../design/shapeGeometry";
 import {
   records,
   putRecord,
   restoreDraft,
   readImage,
-  saveImage,
 } from "../../imageStorage";
 const download = (blob, name) => {
   const url = URL.createObjectURL(blob),
@@ -77,79 +75,9 @@ export default function ProjectsPanel({ announce, dimensions }) {
     }
     return { format: "luma-project", version: 1, state, assets };
   };
-  const unpack = async (file) => {
-    if (file.size > 100 * 1024 * 1024)
-      throw new Error("Project file exceeds 100 MB");
-    const data = JSON.parse(await file.text());
-    if (
-      data.format !== "luma-project" ||
-      data.version !== 1 ||
-      !Array.isArray(data.state?.layers) ||
-      !data.assets?.source
-    )
-      throw new Error("Unsupported project file");
-    if (
-      data.state.layers.length > 500 ||
-      data.state.layers.some(
-        (l) =>
-          !["image", "text", ...shapeTypes, "icon", "sticker"].includes(
-            l.type,
-          ) ||
-          !["x", "y", "width", "height", "rotation", "opacity"].every((k) =>
-            Number.isFinite(l[k]),
-          ),
-      )
-    )
-      throw new Error("Invalid project layers");
-    const id = newId(),
-      assets = {};
-    for (const [key, value] of Object.entries(data.assets)) {
-      if (
-        typeof value !== "string" ||
-        !/^data:image\/(png|jpeg|webp|gif|avif);base64,/.test(value)
-      )
-        throw new Error("Unsupported image asset");
-      const blob = await (await fetch(value)).blob(),
-        assetId = key === "source" ? id : `${id}:layer:${newId()}`;
-      await saveImage(blob, assetId);
-      assets[key] = assetId;
-    }
-    const source = await readImage(id);
-    dispatch(
-      actions.openDraft({
-        state: {
-          ...data.state,
-          projectId: id,
-          isUploaded: true,
-          baseAssetId: assets[data.state.baseAssetId] || null,
-          layers: data.state.layers.map((l) => ({
-            ...l,
-            assetId: assets[l.assetId] || null,
-          })),
-        },
-        url: URL.createObjectURL(source),
-      }),
-    );
-    announce("Editable project imported.");
-  };
   return (
     <div className="inspector-scroll">
       <div className="space-y-4 py-4 text-xs">
-        <h2>Editable project file</h2>
-        <label className="block">
-          Import .luma.json
-          <input
-            aria-label="Import editable project"
-            type="file"
-            accept=".json"
-            disabled={busy}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) run(() => unpack(file));
-            }}
-          />
-        </label>
         <h2>Named versions</h2>
         <input
           aria-label="Version name"
