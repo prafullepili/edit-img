@@ -354,6 +354,8 @@ input:focus-visible {
   justify-content: center;
   padding: 36px 46px 46px;
   overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
   background: #151513;
 }
 .canvas-grid {

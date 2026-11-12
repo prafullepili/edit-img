@@ -54,6 +54,7 @@ function App() {
   const editor = useSelector((s) => s.editor);
   const fileRef = useRef(null);
   const previewImageRef = useRef(null);
+  const workbenchRef = useRef(null);
 
   const [showBefore, setShowBefore] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
@@ -63,6 +64,10 @@ function App() {
   const [dragging, setDragging] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
+  const canvasPointers = useRef(new Map());
+  const canvasGesture = useRef(null);
+  const touchGesture = useRef(null);
   const [guides, setGuides] = useState([]);
   const [working, setWorking] = useState(false);
   const layerImages = useLayerImages(editor.layers);
@@ -92,6 +97,196 @@ function App() {
   const selectedText = editor.layers.find(
     (layer) => layer.id === editor.selectedLayerId && layer.type === "text",
   );
+  const isCanvasGestureTarget = (target) => {
+    if (editor.activeTool === "crop" || editor.activeTool === "retouch") return false;
+    if (!(target instanceof Element)) return false;
+    if (target.closest("svg, canvas, .on-canvas-text-editor")) return false;
+    return Boolean(target.closest(".workbench") && !target.closest("canvas"));
+  };
+  const handleCanvasPointerDown = (event) => {
+    if (event.pointerType !== "mouse" || !isCanvasGestureTarget(event.target)) return;
+    const pointers = canvasPointers.current;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const rect = event.currentTarget.getBoundingClientRect();
+    const center = rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : { x: event.clientX, y: event.clientY };
+    if (pointers.size === 1) {
+      canvasGesture.current = {
+        mode: "pan",
+        startX: event.clientX,
+        startY: event.clientY,
+        panX: canvasPan.x,
+        panY: canvasPan.y,
+        moved: false,
+      };
+    } else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      canvasGesture.current = {
+        mode: "pinch",
+        distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+        zoom: editor.zoom,
+        originX: midpoint.x - center.x,
+        originY: midpoint.y - center.y,
+        panX: canvasPan.x,
+        panY: canvasPan.y,
+      };
+      event.preventDefault();
+    }
+  };
+  const handleCanvasPointerMove = (event) => {
+    if (event.pointerType !== "mouse") return;
+    const pointers = canvasPointers.current;
+    if (!pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const gesture = canvasGesture.current;
+    if (!gesture) return;
+    if (gesture.mode === "pinch" && pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+      const nextZoom = Math.max(10, gesture.zoom * (distance / gesture.distance));
+      const ratio = nextZoom / gesture.zoom;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const centerX = rect ? rect.left + rect.width / 2 : midpoint.x;
+      const centerY = rect ? rect.top + rect.height / 2 : midpoint.y;
+      const focusX = midpoint.x - centerX;
+      const focusY = midpoint.y - centerY;
+      dispatch(actions.setZoom(nextZoom));
+      setCanvasPan({
+        x: focusX - (gesture.originX - gesture.panX) * ratio,
+        y: focusY - (gesture.originY - gesture.panY) * ratio,
+      });
+      event.preventDefault();
+      return;
+    }
+    if (gesture.mode === "pan" && pointers.size === 1) {
+      const dx = event.clientX - gesture.startX;
+      const dy = event.clientY - gesture.startY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) gesture.moved = true;
+      if (gesture.moved) {
+        setCanvasPan({ x: gesture.panX + dx, y: gesture.panY + dy });
+        event.preventDefault();
+      }
+    }
+  };
+  const handleCanvasPointerUp = (event) => {
+    if (event.pointerType !== "mouse") return;
+    canvasPointers.current.delete(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!canvasPointers.current.size) canvasGesture.current = null;
+    else {
+      const [pointer] = canvasPointers.current.values();
+      canvasGesture.current = {
+        mode: "pan",
+        startX: pointer.x,
+        startY: pointer.y,
+        panX: canvasPan.x,
+        panY: canvasPan.y,
+        moved: false,
+      };
+    }
+  };
+  useEffect(() => {
+    const node = workbenchRef.current;
+    if (!node) return undefined;
+    const getTouches = (event) => Array.from(event.touches).slice(0, 2);
+    const startTouch = (event) => {
+      if (editor.activeTool === "crop" || editor.activeTool === "retouch") return;
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(".workbench")) return;
+      if (target.closest(".layer-transform-box, .layer-resize-handle, .layer-rotate-handle, .text-drag-handle, .on-canvas-text-editor, input, button")) return;
+      const touches = getTouches(event);
+      const rect = node.getBoundingClientRect();
+      const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      if (touches.length === 1) {
+        const touch = touches[0];
+        touchGesture.current = {
+          mode: "pan",
+          startX: touch.clientX,
+          startY: touch.clientY,
+          panX: canvasPan.x,
+          panY: canvasPan.y,
+          panAllowed: Boolean(target.closest(".preview-image, .canvas-grid, .workbench")),
+          moved: false,
+        };
+      } else if (touches.length === 2) {
+        const [a, b] = touches;
+        const midpoint = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+        touchGesture.current = {
+          mode: "pinch",
+          distance: Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)),
+          zoom: editor.zoom,
+          originX: midpoint.x - center.x,
+          originY: midpoint.y - center.y,
+          panX: canvasPan.x,
+          panY: canvasPan.y,
+        };
+        event.preventDefault();
+      }
+    };
+    const moveTouch = (event) => {
+      const gesture = touchGesture.current;
+      if (!gesture) return;
+      const touches = getTouches(event);
+      if (gesture.mode === "pinch" && touches.length >= 2) {
+        const [a, b] = touches;
+        const midpoint = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+        const distance = Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY));
+        const nextZoom = Math.max(10, gesture.zoom * distance / gesture.distance);
+        const ratio = nextZoom / gesture.zoom;
+        const rect = node.getBoundingClientRect();
+        const focusX = midpoint.x - (rect.left + rect.width / 2);
+        const focusY = midpoint.y - (rect.top + rect.height / 2);
+        dispatch(actions.setZoom(nextZoom));
+        setCanvasPan({
+          x: focusX - (gesture.originX - gesture.panX) * ratio,
+          y: focusY - (gesture.originY - gesture.panY) * ratio,
+        });
+        event.preventDefault();
+      } else if (gesture.mode === "pan" && touches.length === 1 && gesture.panAllowed) {
+        const touch = touches[0];
+        const dx = touch.clientX - gesture.startX;
+        const dy = touch.clientY - gesture.startY;
+        if (Math.abs(dx) + Math.abs(dy) > 3) gesture.moved = true;
+        if (gesture.moved) {
+          setCanvasPan({ x: gesture.panX + dx, y: gesture.panY + dy });
+          event.preventDefault();
+        }
+      }
+    };
+    const endTouch = (event) => {
+      if (!event.touches.length) {
+        touchGesture.current = null;
+        return;
+      }
+      if (event.touches.length === 1) {
+        const touch = event.touches[0];
+        touchGesture.current = {
+          mode: "pan",
+          startX: touch.clientX,
+          startY: touch.clientY,
+          panX: canvasPan.x,
+          panY: canvasPan.y,
+          panAllowed: true,
+          moved: false,
+        };
+      }
+    };
+    node.addEventListener("touchstart", startTouch, { passive: false });
+    node.addEventListener("touchmove", moveTouch, { passive: false });
+    node.addEventListener("touchend", endTouch, { passive: false });
+    node.addEventListener("touchcancel", endTouch, { passive: false });
+    return () => {
+      node.removeEventListener("touchstart", startTouch);
+      node.removeEventListener("touchmove", moveTouch);
+      node.removeEventListener("touchend", endTouch);
+      node.removeEventListener("touchcancel", endTouch);
+    };
+  }, [canvasPan.x, canvasPan.y, dispatch, editor.activeTool, editor.zoom]);
   const editingText =
     editingTextId === "primary"
       ? editor.textLayer
@@ -526,25 +721,39 @@ function App() {
               <button
                 className="zoom-btn"
                 aria-label="Zoom out"
-                onClick={() =>
-                  dispatch(actions.setZoom(Math.max(50, editor.zoom - 10)))
-                }
+                  onClick={() => dispatch(actions.setZoom(Math.max(10, editor.zoom - 10)))}
               >
                 <Icon name="zoomOut" size={16} />
               </button>
-              <span className="zoom-value">{editor.zoom}%</span>
+              <button
+                className="zoom-value"
+                aria-label="Reset canvas zoom"
+                title="Reset zoom and position"
+                onClick={() => {
+                  dispatch(actions.setZoom(100));
+                  setCanvasPan({ x: 0, y: 0 });
+                }}
+              >
+                {Math.round(editor.zoom)}%
+              </button>
               <button
                 className="zoom-btn"
                 aria-label="Zoom in"
-                onClick={() =>
-                  dispatch(actions.setZoom(Math.min(150, editor.zoom + 10)))
-                }
+                  onClick={() => dispatch(actions.setZoom(editor.zoom + 10))}
               >
                 <Icon name="zoomIn" size={16} />
               </button>
             </div>
           </div>
-          <section className="workbench" aria-label="Image canvas">
+          <section
+            className="workbench"
+            ref={workbenchRef}
+            aria-label="Image canvas"
+            onPointerDown={handleCanvasPointerDown}
+            onPointerMove={handleCanvasPointerMove}
+            onPointerUp={handleCanvasPointerUp}
+            onPointerCancel={handleCanvasPointerUp}
+          >
             <div className="canvas-grid" />
             <div
               className={`image-frame ${editor.cropRatio !== "Original" ? "cropped" : ""}`}
@@ -555,7 +764,7 @@ function App() {
                 height: "auto",
                 maxHeight: "none",
                 containerType: "inline-size",
-                transform: `scale(${editor.zoom / 100})`,
+                transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${editor.zoom / 100})`,
               }}
             >
               {photoPreview.url && (
@@ -566,6 +775,7 @@ function App() {
                   alt="Current photo being edited"
                   onPointerDown={() => {
                     if (
+                      event.pointerType !== "mouse" ||
                       showBefore ||
                       cropping ||
                       editor.activeTool === "retouch"
