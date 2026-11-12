@@ -156,3 +156,6 @@ Use `npm run build:pages` to produce the Pages build locally. Standard `npm run 
 
 
 Text previews render only the glyph bounds plus blur/shadow padding, at the displayed size (up to 2x pixel density), instead of a photo-sized 1600px canvas. Text wrapping is cached across line-spacing/outline/blur changes and passed into the shared renderer. Moving a layer reuses its painted text when its style is unchanged. Export continues to use full-resolution text rendering.
+
+
+Deleting a grouped layer prompts for confirmation and removes the entire group in one undoable operation. This applies to the row trash icon, Delete group button, and Delete/Backspace shortcuts. Cancel does not change layers or history. Locked groups cannot be deleted; ungroup first to remove only one member.

@@ -295,6 +295,22 @@ const slice = createSlice({
       if (state.selectedLayerId === action.payload)
         state.selectedLayerId = state.layers.at(-1)?.id || null;
     },
+    removeGroup(state, action) {
+      if (!action.payload) return;
+      const members = state.layers.filter(
+        (layer) => layer.groupId === action.payload,
+      );
+      if (!members.length || members.some((layer) => layer.locked)) return;
+      if (members.some((layer) => layer.id === state.selectedLayerId)) {
+        state.selectedLayerId =
+          state.layers
+            .filter((layer) => layer.groupId !== action.payload)
+            .at(-1)?.id || null;
+      }
+      state.layers = state.layers.filter(
+        (layer) => layer.groupId !== action.payload,
+      );
+    },
     moveLayer(state, action) {
       const layer = state.layers.find((l) => l.id === action.payload.id);
       if (!layer || isLayerLocked(layer, state.layers)) return;

@@ -1,3 +1,4 @@
+import { requestLayerDeletion } from "./features/editor/layerDeletion";
 import { newId } from "./ids.js";
 import React, { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -412,15 +413,24 @@ export default function LayersPanel({ dimensions, announce }) {
                   {layer.visible ? "◉" : "○"}
                 </button>
                 <button
-                  aria-label={`Delete ${layer.name}`}
-                  title="Delete layer · Delete / Backspace (undo available)"
+                  aria-label={
+                    layer.groupId
+                      ? `Delete group ${layer.groupName || "Group"}`
+                      : `Delete ${layer.name}`
+                  }
+                  title={
+                    layer.groupId
+                      ? "Delete entire group (confirmation required)"
+                      : "Delete layer · Delete / Backspace (undo available)"
+                  }
                   aria-keyshortcuts="Delete Backspace"
                   className="px-0.5 text-[#e9958b] disabled:opacity-25"
                   disabled={isLayerLocked(layer, e.layers)}
                   onClick={() => {
-                    dispatch(actions.snapshot());
-                    dispatch(actions.removeLayer(layer.id));
-                    setChecked((ids) => ids.filter((id) => id !== layer.id));
+                    const removed = requestLayerDeletion(layer.id);
+                    setChecked((ids) =>
+                      ids.filter((id) => !removed.includes(id)),
+                    );
                   }}
                 >
                   <svg
@@ -833,11 +843,13 @@ export default function LayersPanel({ dimensions, announce }) {
                 <button
                   className={`${buttonClass} text-[#ffa99d]`}
                   onClick={() => {
-                    dispatch(actions.snapshot());
-                    dispatch(actions.removeLayer(selected.id));
+                    const removed = requestLayerDeletion(selected.id);
+                    setChecked((ids) =>
+                      ids.filter((id) => !removed.includes(id)),
+                    );
                   }}
                 >
-                  Delete layer
+                  {selected.groupId ? "Delete group" : "Delete layer"}
                 </button>
               </div>
             </fieldset>

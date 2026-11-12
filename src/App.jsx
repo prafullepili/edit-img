@@ -1,3 +1,4 @@
+import { requestLayerDeletion } from "./features/editor/layerDeletion";
 import { newId } from "./ids.js";
 import React, {
   lazy,
@@ -247,10 +248,7 @@ function App() {
           !document.querySelector('[role="dialog"], dialog[open]')
         ) {
           e.preventDefault();
-          if (!isLayerLocked(layer, current.layers)) {
-            dispatch(actions.snapshot());
-            dispatch(actions.removeLayer(layer.id));
-          }
+          requestLayerDeletion(layer.id);
           return;
         }
       }

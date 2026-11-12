@@ -320,7 +320,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
           <br />
           Arrow keys on handles: resize/rotate
           <br />
-          Delete / Backspace: delete selected layer (in Layers)
+          Delete / Backspace: delete selected layer; groups require confirmation
           <br />
           Ctrl/⌘ Z: restore deleted layer
         </p>
