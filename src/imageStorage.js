@@ -1,6 +1,126 @@
 import { photoDefaults } from "./features/photo/defaults";
 const DB_NAME = "luma-studio-local";
 const STORE_NAME = "project-assets";
+const LOCAL_STATE_KEY = "luma-studio-project-v1";
+
+function estimateBytes(value) {
+  if (value instanceof Blob) return value.size;
+  if (typeof value === "string") return new Blob([value]).size;
+  try {
+    return new Blob([JSON.stringify(value)]).size;
+  } catch {
+    return 0;
+  }
+}
+
+function referencedAssets(value) {
+  const state = value?.state || value?.project?.state || value;
+  return [
+    state?.projectId,
+    state?.baseAssetId,
+    ...(state?.layers || []).map((layer) => layer.assetId),
+    ...(value?.design?.layers || []).map((layer) => layer.assetId),
+  ].filter(Boolean);
+}
+
+export async function getLocalStorageSummary() {
+  const entries = await records("");
+  const byKey = new Map(entries.map(({ key, value }) => [String(key), value]));
+  const imageBytes = (id) => estimateBytes(byKey.get(`image:${id}`));
+  const edits = entries
+    .filter(({ key }) => String(key).startsWith("draft:") || String(key).startsWith("trash:"))
+    .map(({ key, value }) => {
+      const deleted = String(key).startsWith("trash:");
+      const ids = new Set(referencedAssets(value));
+      return {
+        id: value.id,
+        name: value.state?.projectTitle?.trim() && value.state.projectTitle !== "Untitled edit"
+          ? value.state.projectTitle
+          : value.state?.imageName || "Untitled edit",
+        updatedAt: deleted ? value.deletedAt || value.updatedAt : value.updatedAt,
+        deleted,
+        bytes: estimateBytes(value) + [...ids].reduce((total, id) => total + imageBytes(id), 0),
+      };
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+  const databaseBytes = entries.reduce((total, entry) => total + estimateBytes(entry.value), 0);
+  let browser = null;
+  try {
+    browser = await navigator.storage?.estimate?.();
+  } catch {}
+  return {
+    databaseBytes,
+    browserUsage: browser?.usage ?? null,
+    browserQuota: browser?.quota ?? null,
+    edits,
+  };
+}
+
+export async function permanentlyDeleteEdits(ids) {
+  const deleting = new Set(ids);
+  if (!deleting.size) return;
+  let currentId = null;
+  try {
+    currentId = JSON.parse(localStorage.getItem(LOCAL_STATE_KEY) || "null")?.projectId;
+  } catch {}
+  if (currentId && deleting.has(currentId))
+    throw new Error("The open edit cannot be permanently removed");
+  const db = await openDatabase();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const entries = [];
+    const cursorRequest = store.openCursor();
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (cursor) {
+        entries.push({ key: String(cursor.key), value: cursor.value });
+        cursor.continue();
+        return;
+      }
+      const removeKeys = new Set();
+      const candidateAssets = new Set();
+      const protectedAssets = new Set();
+      for (const { key, value } of entries) {
+        const id = key.startsWith("draft:") || key.startsWith("trash:")
+          ? key.slice(key.indexOf(":") + 1)
+          : null;
+        if (id && deleting.has(id)) {
+          removeKeys.add(`draft:${id}`);
+          removeKeys.add(`trash:${id}`);
+          referencedAssets(value).forEach((asset) => candidateAssets.add(asset));
+        } else {
+          referencedAssets(value).forEach((asset) => protectedAssets.add(asset));
+        }
+      }
+      try {
+        const current = JSON.parse(localStorage.getItem(LOCAL_STATE_KEY) || "null");
+        referencedAssets(current).forEach((asset) => protectedAssets.add(asset));
+      } catch {}
+      for (const id of deleting) {
+        removeKeys.add(`draft:${id}`);
+        removeKeys.add(`trash:${id}`);
+      }
+      for (const asset of candidateAssets)
+        if (!protectedAssets.has(asset)) removeKeys.add(`image:${asset}`);
+      for (const key of removeKeys) store.delete(key);
+    };
+    cursorRequest.onerror = () => reject(cursorRequest.error);
+    tx.oncomplete = () => {
+      db.close();
+      window.dispatchEvent(new Event("luma-drafts-changed"));
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+    tx.onabort = () => {
+      db.close();
+      reject(tx.error || new Error("Could not clean local storage"));
+    };
+  });
+}
 
 function openDatabase() {
   return new Promise((resolve, reject) => {

@@ -10,6 +10,7 @@ import {
   restoreDraft,
   readImage,
 } from "../../imageStorage";
+import LocalStorageManager from "./LocalStorageManager";
 const download = (blob, name) => {
   const url = URL.createObjectURL(blob),
     a = document.createElement("a");
@@ -79,6 +80,7 @@ export default function ProjectsPanel({ announce, dimensions }) {
   return (
     <div className="inspector-scroll">
       <div className="space-y-4 py-4 text-xs">
+        <LocalStorageManager announce={announce} />
         <h2>Named versions</h2>
         <input
           aria-label="Version name"
