@@ -4,6 +4,7 @@ import { prepareDraftDeletion } from "../../store";
 import {
   getLocalStorageSummary,
   permanentlyDeleteEdits,
+  restoreDraft,
 } from "../../imageStorage";
 
 function formatBytes(value) {
@@ -64,6 +65,20 @@ export default function LocalStorageManager({ announce }) {
       announce(`Removed ${items.length} saved edit${items.length === 1 ? "" : "s"} from this device.`);
     } catch {
       announce("Storage cleanup failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restore = async (edit) => {
+    setBusy(true);
+    try {
+      await restoreDraft(edit.id);
+      setSelected((items) => items.filter((id) => id !== edit.id));
+      await refresh();
+      announce(`Restored “${edit.name}” to Past edits.`);
+    } catch {
+      announce(`Could not restore “${edit.name}”. Please try again.`);
     } finally {
       setBusy(false);
     }
@@ -139,9 +154,9 @@ export default function LocalStorageManager({ announce }) {
                   {summary.edits.map((edit) => {
                     const protectedEdit = edit.id === currentId;
                     return (
-                      <label
+                      <div
                         key={`${edit.deleted ? "trash" : "draft"}:${edit.id}`}
-                        className={`flex items-center gap-2 rounded border border-[#303127] px-2 py-1.5 ${protectedEdit ? "opacity-50" : "cursor-pointer hover:border-[#565a43]"}`}
+                        className={`flex items-center gap-2 rounded border border-[#303127] px-2 py-1.5 ${protectedEdit ? "opacity-50" : "hover:border-[#565a43]"}`}
                       >
                         <input
                           type="checkbox"
@@ -153,16 +168,27 @@ export default function LocalStorageManager({ announce }) {
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[10px] text-[#dedfd5]">
-                            {edit.name}{edit.deleted ? " · Deleted" : ""}{protectedEdit ? " · Open" : ""}
+                            {edit.name}
                           </span>
                           <span className="block text-[9px] text-[#85877d]">
-                            {edit.updatedAt ? new Date(edit.updatedAt).toLocaleDateString() : "Saved edit"}
+                            {edit.deleted ? "Deleted · recoverable" : protectedEdit ? "Open edit · protected" : "Saved edit"}
+                            {edit.updatedAt ? ` · ${new Date(edit.updatedAt).toLocaleDateString()}` : ""}
                           </span>
                         </span>
                         <span className="shrink-0 font-mono text-[9px] text-[#aeb09f]">
                           ~{formatBytes(edit.bytes)}
                         </span>
-                      </label>
+                        {edit.deleted && (
+                          <button
+                            className="shrink-0 rounded border border-[#4c5a37] px-2 py-1 text-[9px] text-[#c8ef69] hover:border-[#c8ef69] disabled:opacity-40"
+                            onClick={() => restore(edit)}
+                            disabled={busy}
+                            aria-label={`Restore ${edit.name}`}
+                          >
+                            Restore
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -174,7 +200,7 @@ export default function LocalStorageManager({ announce }) {
                 disabled={busy || !selected.length || !removableCount}
                 onClick={removeSelected}
               >
-                {busy ? "Removing…" : `Permanently remove selected${selected.length ? ` (${selected.length})` : ""}`}
+                {busy ? "Deleting…" : `Permanently delete selected edits${selected.length ? ` (${selected.length})` : ""}`}
               </button>
             </div>
           </details>

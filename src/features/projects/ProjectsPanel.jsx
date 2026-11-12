@@ -1,6 +1,6 @@
 import ShortcutList from "./ShortcutList";
 import { newId } from "../../ids.js";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { actions } from "../../store";
 import SettingRange from "../../components/SettingRange";
@@ -9,6 +9,7 @@ import {
   putRecord,
   restoreDraft,
   readImage,
+  removeRecord,
 } from "../../imageStorage";
 import LocalStorageManager from "./LocalStorageManager";
 const download = (blob, name) => {
@@ -28,6 +29,8 @@ const encode = (blob) =>
   });
 export default function ProjectsPanel({ announce, dimensions }) {
   const resultUrls = useRef([]);
+  const announceRef = useRef(announce);
+  announceRef.current = announce;
   useEffect(() => () => resultUrls.current.forEach(URL.revokeObjectURL), []);
   const e = useSelector((s) => s.editor),
     dispatch = useDispatch(),
@@ -37,14 +40,19 @@ export default function ProjectsPanel({ announce, dimensions }) {
     [busy, setBusy] = useState(false),
     [size, setSize] = useState(1200),
     [results, setResults] = useState([]);
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setTrash(await records("trash:"));
     setVersions(await records(`version:${e.projectId}:`));
-  };
-  useEffect(() => {
-    refresh().catch(() => announce("Project history is unavailable."));
-    return () => results.forEach((r) => URL.revokeObjectURL(r.url));
   }, [e.projectId]);
+  useEffect(() => {
+    const update = () =>
+      refresh().catch(() => announceRef.current("Project history is unavailable."));
+    update();
+    window.addEventListener("luma-drafts-changed", update);
+    return () => {
+      window.removeEventListener("luma-drafts-changed", update);
+    };
+  }, [refresh]);
   const run = async (task) => {
     setBusy(true);
     try {
@@ -100,33 +108,55 @@ export default function ProjectsPanel({ announce, dimensions }) {
                 project: await pack(),
               });
               await refresh();
+              window.dispatchEvent(new Event("luma-drafts-changed"));
             })
           }
         >
           Create named version
         </button>
         {versions.map((v) => (
-          <button
-            className="button w-full"
-            key={v.key}
-            disabled={busy}
-            onClick={() =>
-              run(async () => {
-                const state = v.value.project.state;
-                dispatch(actions.snapshot());
-                dispatch(
-                  actions.restoreVersion({
-                    ...state,
-                    projectId: e.projectId,
-                    imageUrl: e.imageUrl,
-                  }),
-                );
-                announce("Version restored.");
-              })
-            }
-          >
-            {v.value.name} · {new Date(v.value.date).toLocaleString()}
-          </button>
+          <div className="flex w-full gap-2" key={v.key}>
+            <button
+              className="button min-w-0 flex-1 text-left"
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  const state = v.value.project.state;
+                  dispatch(actions.snapshot());
+                  dispatch(
+                    actions.restoreVersion({
+                      ...state,
+                      projectId: e.projectId,
+                      imageUrl: e.imageUrl,
+                    }),
+                  );
+                  announce("Version restored.");
+                })
+              }
+            >
+              <span className="block truncate">{v.value.name}</span>
+              <span className="block text-[9px] text-[#999b90]">
+                {new Date(v.value.date).toLocaleString()}
+              </span>
+            </button>
+            <button
+              className="rounded border border-[#393a31] px-3 text-[#d8a095] hover:border-[#a86a5b] disabled:opacity-40"
+              aria-label={`Delete version ${v.value.name}`}
+              title="Delete this named version"
+              disabled={busy}
+              onClick={() => {
+                if (!window.confirm(`Delete version “${v.value.name}”? This cannot be undone.`)) return;
+                run(async () => {
+                  await removeRecord(v.key);
+                  await refresh();
+                  window.dispatchEvent(new Event("luma-drafts-changed"));
+                  announce(`Deleted version “${v.value.name}”.`);
+                });
+              }}
+            >
+              ×
+            </button>
+          </div>
         ))}
         <h2>Deleted projects</h2>
         {trash.map((r) => (
