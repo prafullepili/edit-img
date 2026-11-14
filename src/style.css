@@ -2073,41 +2073,6 @@ input:focus-visible {
   .top-actions {
     gap: 2px;
   }
-  .history-button {
-    display: none;
-  }
-  .mobile-history-actions {
-    position: absolute;
-    z-index: 10;
-    bottom: 8px;
-    right: 8px;
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid #414337;
-    border-radius: 8px;
-    background: #171715df;
-    box-shadow: 0 3px 14px #0008;
-    backdrop-filter: blur(8px);
-  }
-  .mobile-history-action {
-    display: grid;
-    width: 30px;
-    height: 28px;
-    place-items: center;
-    border: 0;
-    border-radius: 5px;
-    background: transparent;
-    color: #d9e8b5;
-  }
-  .mobile-history-action:hover:not(:disabled) {
-    background: #303127;
-    color: #c8ef69;
-  }
-  .mobile-history-action:disabled {
-    cursor: not-allowed;
-    opacity: 0.35;
-  }
   .editor-layout {
     min-height: 0;
     overflow: hidden;
@@ -2349,6 +2314,46 @@ input:focus-visible {
     max-width: calc(100vw - 24px);
   }
 }
+
+@media (max-width: 760px) and (pointer: coarse),
+  (max-width: 1024px) and (max-height: 520px) and (pointer: coarse) {
+  .history-button {
+    display: none;
+  }
+  .mobile-history-actions {
+    position: absolute;
+    z-index: 10;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid #414337;
+    border-radius: 8px;
+    background: #171715df;
+    box-shadow: 0 3px 14px #0008;
+    backdrop-filter: blur(8px);
+  }
+  .mobile-history-action {
+    display: grid;
+    width: 30px;
+    height: 28px;
+    place-items: center;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #d9e8b5;
+  }
+  .mobile-history-action:hover:not(:disabled) {
+    background: #303127;
+    color: #c8ef69;
+  }
+  .mobile-history-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+}
+
 @media (max-width: 1024px) and (orientation: landscape) and (max-height: 520px) {
   .topbar {
     height: 42px;
@@ -2376,15 +2381,6 @@ input:focus-visible {
   .mobile-panel-toggle,
   .canvas-action.mobile-only[aria-pressed],
   .mobile-split-resizer {
-    display: none;
-  }
-}
-
-@media (min-width: 761px) and (max-width: 1024px) and (max-height: 520px) and (pointer: fine) {
-  .history-button {
-    display: grid;
-  }
-  .mobile-history-actions {
     display: none;
   }
 }
