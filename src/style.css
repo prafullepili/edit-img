@@ -2380,6 +2380,15 @@ input:focus-visible {
   }
 }
 
+@media (min-width: 761px) and (max-width: 1024px) and (max-height: 520px) and (pointer: fine) {
+  .history-button {
+    display: grid;
+  }
+  .mobile-history-actions {
+    display: none;
+  }
+}
+
 .info-tip {
   position: relative;
   display: inline-flex;
