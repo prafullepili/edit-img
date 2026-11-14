@@ -2080,11 +2080,10 @@ input:focus-visible {
     position: absolute;
     z-index: 10;
     bottom: 8px;
-    left: 50%;
+    right: 8px;
     display: flex;
     gap: 4px;
     padding: 4px;
-    transform: translateX(-50%);
     border: 1px solid #414337;
     border-radius: 8px;
     background: #171715df;
