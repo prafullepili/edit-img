@@ -1415,10 +1415,14 @@ input:focus-visible {
   }
   .brand-divider,
   .workspace-name,
-  .history-button,
   .top-separator,
   .reset-button {
     display: none;
+  }
+  .history-button {
+    display: grid;
+    width: 26px;
+    height: 28px;
   }
   .editor-layout {
     grid-template-columns: 52px minmax(0, 1fr);
@@ -2064,7 +2068,7 @@ input:focus-visible {
     display: none;
   }
   .top-actions {
-    gap: 5px;
+    gap: 2px;
   }
   .editor-layout {
     min-height: 0;
