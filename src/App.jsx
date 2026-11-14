@@ -55,10 +55,13 @@ function App() {
   const fileRef = useRef(null);
   const previewImageRef = useRef(null);
   const workbenchRef = useRef(null);
+  const editorLayoutRef = useRef(null);
+  const mobileSplitDrag = useRef(null);
 
   const [showBefore, setShowBefore] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
   const [mobileLayout, setMobileLayout] = useState("balanced");
+  const [mobilePhotoPercent, setMobilePhotoPercent] = useState(38);
   const [mobilePastEdits, setMobilePastEdits] = useState(false);
   const [toast, setToast] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -207,6 +210,35 @@ function App() {
       x: focusX - (focusX - canvasPan.x) * ratio,
       y: focusY - (focusY - canvasPan.y) * ratio,
     });
+  };
+  const startMobileSplitDrag = (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    event.preventDefault();
+    mobileSplitDrag.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startPercent: mobilePhotoPercent,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const moveMobileSplitDrag = (event) => {
+    const drag = mobileSplitDrag.current;
+    const layout = editorLayoutRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !layout) return;
+    const height = layout.getBoundingClientRect().height;
+    if (!height) return;
+    setMobilePhotoPercent(
+      Math.max(
+        22,
+        Math.min(72, drag.startPercent + ((event.clientY - drag.startY) / height) * 100),
+      ),
+    );
+  };
+  const endMobileSplitDrag = (event) => {
+    if (mobileSplitDrag.current?.pointerId !== event.pointerId) return;
+    mobileSplitDrag.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
   };
   useEffect(() => {
     const node = workbenchRef.current;
@@ -658,7 +690,11 @@ function App() {
           </button>
         </div>
       </header>
-      <div className="editor-layout">
+      <div
+        className="editor-layout"
+        ref={editorLayoutRef}
+        style={{ "--mobile-photo-height": `${mobilePhotoPercent}%` }}
+      >
         <nav className="tool-rail" aria-label="Editor tools">
           <div className="rail-tools">
             {tools.map((tool) => (
@@ -1030,6 +1066,35 @@ function App() {
               <Icon name="upload" size={14} /> Replace image
             </button>
           </section>
+          {mobileLayout === "balanced" && (
+            <div
+              className="mobile-split-resizer"
+              role="separator"
+              aria-label="Resize photo and editing panels"
+              aria-orientation="horizontal"
+              aria-valuemin={22}
+              aria-valuemax={72}
+              aria-valuenow={Math.round(mobilePhotoPercent)}
+              tabIndex={0}
+              onPointerDown={startMobileSplitDrag}
+              onPointerMove={moveMobileSplitDrag}
+              onPointerUp={endMobileSplitDrag}
+              onPointerCancel={endMobileSplitDrag}
+              onKeyDown={(event) => {
+                const step = event.shiftKey ? 5 : 2;
+                if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+                event.preventDefault();
+                setMobilePhotoPercent((value) =>
+                  Math.max(
+                    22,
+                    Math.min(72, value + (event.key === "ArrowDown" ? step : -step)),
+                  ),
+                );
+              }}
+            >
+              <span />
+            </div>
+          )}
           {mobilePastEdits && (
             <button
               className="mobile-past-backdrop"
