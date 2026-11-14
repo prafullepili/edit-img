@@ -1066,6 +1066,26 @@ function App() {
               <Icon name="upload" size={14} /> Replace image
             </button>
           </section>
+          <div className="mobile-history-actions" aria-label="Photo history controls">
+            <button
+              className="mobile-history-action"
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo"
+              disabled={!hasPhoto}
+              onClick={() => dispatch(actions.undo())}
+            >
+              <Icon name="undo" size={16} />
+            </button>
+            <button
+              className="mobile-history-action"
+              title="Redo (Ctrl+Shift+Z)"
+              aria-label="Redo"
+              disabled={!hasPhoto}
+              onClick={() => dispatch(actions.redo())}
+            >
+              <Icon name="redo" size={16} />
+            </button>
+          </div>
           {mobileLayout === "balanced" && (
             <div
               className="mobile-split-resizer"

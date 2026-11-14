@@ -2073,6 +2073,42 @@ input:focus-visible {
   .top-actions {
     gap: 2px;
   }
+  .history-button {
+    display: none;
+  }
+  .mobile-history-actions {
+    position: absolute;
+    z-index: 10;
+    bottom: 8px;
+    left: 50%;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    transform: translateX(-50%);
+    border: 1px solid #414337;
+    border-radius: 8px;
+    background: #171715df;
+    box-shadow: 0 3px 14px #0008;
+    backdrop-filter: blur(8px);
+  }
+  .mobile-history-action {
+    display: grid;
+    width: 30px;
+    height: 28px;
+    place-items: center;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #d9e8b5;
+  }
+  .mobile-history-action:hover:not(:disabled) {
+    background: #303127;
+    color: #c8ef69;
+  }
+  .mobile-history-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
   .editor-layout {
     min-height: 0;
     overflow: hidden;
