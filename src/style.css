@@ -2034,6 +2034,9 @@ input:focus-visible {
 .mobile-split-resizer {
   display: none;
 }
+.mobile-history-actions {
+  display: none;
+}
 .past-edits-container {
   display: contents;
 }
