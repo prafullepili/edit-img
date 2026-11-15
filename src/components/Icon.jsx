@@ -128,6 +128,12 @@ const Icon = ({ name, size = 18 }) => {
         <path d="M17 21v-8H7v8M7 3v5h8" />
       </>
     ),
+    trash: (
+      <>
+        <path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6" />
+        <path d="M10 11v6m4-6v6" />
+      </>
+    ),
     flip: (
       <>
         <path d="M12 3v18M3 8h6v8H3zM15 8h6v8h-6z" />
