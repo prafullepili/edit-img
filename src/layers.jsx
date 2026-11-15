@@ -15,6 +15,7 @@ import {
   maskSvgPath,
   clipLayerMask,
 } from "./layerEditing";
+import { createLiveBrush } from "./features/photo/liveBrush";
 
 export const layerDefaults = {
   visible: true,
@@ -185,33 +186,17 @@ function drawPaintStrokes(ctx, strokes, width, height) {
   ctx.clearRect(0, 0, width, height);
   for (const stroke of strokes || []) {
     if (!stroke.points?.length) continue;
-    const first = stroke.points[0];
-    ctx.save();
-    ctx.globalAlpha = stroke.opacity ?? 1;
-    ctx.globalCompositeOperation =
-      stroke.tool === "eraser" ? "destination-out" : "source-over";
-    ctx.strokeStyle = stroke.color || "#ffffff";
-    ctx.fillStyle = stroke.color || "#ffffff";
-    ctx.lineWidth = Math.max(1, stroke.radius * 2 * width);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(first.x * width, first.y * height);
-    if (stroke.points.length === 1) {
-      ctx.arc(
-        first.x * width,
-        first.y * height,
-        ctx.lineWidth / 2,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-    } else {
-      for (const point of stroke.points.slice(1))
-        ctx.lineTo(point.x * width, point.y * height);
-      ctx.stroke();
-    }
-    ctx.restore();
+    const brush = createLiveBrush(ctx, {
+      radius: Math.max(1, stroke.radius * width),
+      color: stroke.color || "#ffffff",
+      opacity: stroke.opacity ?? 1,
+      hardness: stroke.hardness ?? 1,
+      tool: stroke.tool,
+    });
+    const [first, ...remaining] = stroke.points;
+    brush.start({ x: first.x * width, y: first.y * height });
+    for (const point of remaining)
+      brush.move({ x: point.x * width, y: point.y * height });
   }
 }
 
