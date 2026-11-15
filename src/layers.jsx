@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useId } from "react";
+import React, { useEffect, useState, useId, useRef } from "react";
 import { readImage } from "./imageStorage";
 import { isShape, shapePoints } from "./features/design/shapeGeometry";
 import TextArtwork from "./features/design/TextArtwork";
@@ -181,6 +181,69 @@ export function useLayerImages(layers) {
   return images;
 }
 
+function drawPaintStrokes(ctx, strokes, width, height) {
+  ctx.clearRect(0, 0, width, height);
+  for (const stroke of strokes || []) {
+    if (!stroke.points?.length) continue;
+    const first = stroke.points[0];
+    ctx.save();
+    ctx.globalAlpha = stroke.opacity ?? 1;
+    ctx.globalCompositeOperation =
+      stroke.tool === "eraser" ? "destination-out" : "source-over";
+    ctx.strokeStyle = stroke.color || "#ffffff";
+    ctx.fillStyle = stroke.color || "#ffffff";
+    ctx.lineWidth = Math.max(1, stroke.radius * 2 * width);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(first.x * width, first.y * height);
+    if (stroke.points.length === 1) {
+      ctx.arc(
+        first.x * width,
+        first.y * height,
+        ctx.lineWidth / 2,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    } else {
+      for (const point of stroke.points.slice(1))
+        ctx.lineTo(point.x * width, point.y * height);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function PaintLayerPreview({ layer, dimensions }) {
+  const canvas = useRef(null);
+  useEffect(() => {
+    const node = canvas.current;
+    if (!node) return;
+    node.width = Math.max(1, Math.round(dimensions.width));
+    node.height = Math.max(1, Math.round(dimensions.height));
+    drawPaintStrokes(
+      node.getContext("2d"),
+      layer.strokes,
+      node.width,
+      node.height,
+    );
+  }, [dimensions.height, dimensions.width, layer.strokes]);
+  return (
+    <canvas
+      ref={canvas}
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
 export function LayerPreview({
   layers,
   images,
@@ -192,6 +255,7 @@ export function LayerPreview({
   onGuides,
   onEditText,
   editingTextId,
+  interactive = true,
 }) {
   const prefix = useId().replace(/[^a-zA-Z0-9]/g, "");
   return (
@@ -309,8 +373,12 @@ export function LayerPreview({
               overflow: layer.type === "text" ? "visible" : "hidden",
               wordBreak: "break-all",
               userSelect: "none",
+              pointerEvents: interactive ? "auto" : "none",
             }}
           >
+            {layer.type === "paint" && (
+              <PaintLayerPreview layer={layer} dimensions={dimensions} />
+            )}
             {isShape(layer.type) && (
               <ShapePreview layer={layer} dimensions={dimensions} />
             )}
@@ -399,6 +467,18 @@ export async function drawLayers(
           w,
           h,
         );
+      } else if (layer.type === "paint") {
+        const paint = document.createElement("canvas");
+        paint.width = Math.max(1, Math.round(w));
+        paint.height = Math.max(1, Math.round(h));
+        drawPaintStrokes(
+          paint.getContext("2d"),
+          layer.strokes,
+          paint.width,
+          paint.height,
+        );
+        // Erasing must only clear this transparent paint layer, never the photo below it.
+        ctx.drawImage(paint, -w / 2, -h / 2, w, h);
       } else if (["icon", "sticker"].includes(layer.type)) {
         const svg = iconSvg(layer.iconName, layer.color),
           url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));

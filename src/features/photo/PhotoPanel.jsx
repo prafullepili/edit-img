@@ -437,8 +437,9 @@ export default function PhotoPanel({
               </>
             )}
             <p className="text-[#999b90]">
-              Paint directly on the base photo. Each completed stroke can be
-              undone. Design layers are unaffected.
+              Brush strokes go onto a transparent layer above the photo. The
+              eraser clears only brush strokes; healing edits the photo. Each
+              stroke can be undone.
             </p>
             <button
               className="button w-full"

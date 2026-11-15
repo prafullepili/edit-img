@@ -63,9 +63,10 @@ function loadProject() {
     return {
       ...defaults,
       ...stored,
-      activeTool: stored.isUploaded || stored.baseAssetId
-        ? stored.activeTool || "adjust"
-        : "projects",
+      activeTool:
+        stored.isUploaded || stored.baseAssetId
+          ? stored.activeTool || "adjust"
+          : "projects",
       imageUrl: defaults.imageUrl,
       photo: mergePhoto(stored.photo),
       textLayer: { ...defaults.textLayer, ...stored.textLayer },
@@ -177,7 +178,37 @@ const slice = createSlice({
       state.photo = { ...state.photo, ...action.payload };
     },
     addStroke(state, action) {
-      state.photo.strokes.push(action.payload);
+      const stroke = action.payload;
+      if (["brush", "eraser"].includes(stroke.tool) && stroke.paintLayerId) {
+        let layer = state.layers.find(
+          (item) => item.id === stroke.paintLayerId && item.type === "paint",
+        );
+        if (!layer && stroke.tool === "brush") {
+          layer = {
+            id: stroke.paintLayerId,
+            type: "paint",
+            name: "Brush strokes",
+            visible: true,
+            opacity: 100,
+            x: 50,
+            y: 50,
+            width: 100,
+            height: 100,
+            rotation: 0,
+            scale: 1,
+            blend: "normal",
+            strokes: [],
+          };
+          state.layers.push(layer);
+        }
+        if (layer) {
+          layer.strokes ||= [];
+          layer.strokes.push(stroke);
+          state.selectedLayerId = layer.id;
+        }
+        return;
+      }
+      state.photo.strokes.push(stroke);
     },
     setBaseAsset(state, action) {
       state.baseAssetId = action.payload;

@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { actions } from "../../store";
 import { viewToSource, sourceToView, cropBounds } from "./geometry";
 import { createLiveBrush } from "./liveBrush";
+import { isLayerLocked } from "../../layerEditing";
 export default function RetouchCanvas({
   editor,
   settings,
@@ -78,7 +79,7 @@ export default function RetouchCanvas({
   const append = (p) => {
     const g = gesture.current;
     if (!g) return;
-    const mapped = source(p),
+    const mapped = ["brush", "eraser"].includes(g.tool) ? p : source(p),
       last = g.points.at(-1);
     if (mapped.x === last.x && mapped.y === last.y) return;
     g.points.push(mapped);
@@ -92,9 +93,10 @@ export default function RetouchCanvas({
       pending.current.clear();
       clearOverlay();
     } else {
-      if (painter.current) pending.current.add(g.id);
       dispatch(actions.snapshot());
       dispatch(actions.addStroke(g));
+      if (g.tool === "heal" && painter.current) pending.current.add(g.id);
+      else clearOverlay();
     }
     painter.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId))
@@ -114,6 +116,25 @@ export default function RetouchCanvas({
           announce("Healing source selected. Paint over the area to repair.");
           return;
         }
+        const paintLayers = editor.layers.filter(
+          (layer) => layer.type === "paint",
+        );
+        const paintLayer =
+          paintLayers.find(
+            (layer) =>
+              layer.id === editor.selectedLayerId &&
+              !isLayerLocked(layer, editor.layers),
+          ) ||
+          [...paintLayers]
+            .reverse()
+            .find((layer) => !isLayerLocked(layer, editor.layers));
+        if (
+          settings.tool === "eraser" &&
+          (!paintLayer || isLayerLocked(paintLayer, editor.layers))
+        ) {
+          announce("Draw on or unlock a brush layer before erasing.");
+          return;
+        }
         if (settings.tool === "heal" && !settings.source) {
           announce("Choose a healing source first, or Alt-click the photo.");
           return;
@@ -131,7 +152,10 @@ export default function RetouchCanvas({
           hardness: settings.hardness / 100,
           radius: settings.size / 2 / sourceWidth,
           source: settings.source,
-          points: [source(p)],
+          paintLayerId: ["brush", "eraser"].includes(settings.tool)
+            ? paintLayer?.id || newId()
+            : undefined,
+          points: [["brush", "eraser"].includes(settings.tool) ? p : source(p)],
         };
         {
           const canvas = overlay.current;
@@ -190,10 +214,13 @@ export default function RetouchCanvas({
           }
           painter.current = createLiveBrush(canvas.getContext("2d"), {
             radius,
-            color: settings.color,
-            opacity: settings.opacity / 100,
+            color: settings.tool === "eraser" ? "#f27070" : settings.color,
+            opacity:
+              settings.tool === "eraser"
+                ? Math.min(0.6, settings.opacity / 100)
+                : settings.opacity / 100,
             hardness: settings.hardness / 100,
-            tool: settings.tool,
+            tool: settings.tool === "eraser" ? "brush" : settings.tool,
             ...healing,
           });
           painter.current.start(pixelPoint(p));

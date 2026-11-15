@@ -122,13 +122,15 @@ function App() {
   );
   const isCanvasGestureTarget = (target) => {
     if (!hasPhoto) return false;
-    if (editor.activeTool === "crop" || editor.activeTool === "retouch") return false;
+    if (editor.activeTool === "crop" || editor.activeTool === "retouch")
+      return false;
     if (!(target instanceof Element)) return false;
     if (target.closest("svg, canvas, .on-canvas-text-editor")) return false;
     return Boolean(target.closest(".workbench") && !target.closest("canvas"));
   };
   const handleCanvasPointerDown = (event) => {
-    if (event.pointerType !== "mouse" || !isCanvasGestureTarget(event.target)) return;
+    if (event.pointerType !== "mouse" || !isCanvasGestureTarget(event.target))
+      return;
     const pointers = canvasPointers.current;
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -171,7 +173,10 @@ function App() {
       const [a, b] = [...pointers.values()];
       const midpoint = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       const distance = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-      const nextZoom = Math.max(10, gesture.zoom * (distance / gesture.distance));
+      const nextZoom = Math.max(
+        10,
+        gesture.zoom * (distance / gesture.distance),
+      );
       const ratio = nextZoom / gesture.zoom;
       const rect = event.currentTarget.getBoundingClientRect();
       const centerX = rect ? rect.left + rect.width / 2 : midpoint.x;
@@ -222,7 +227,10 @@ function App() {
     const rect = event.currentTarget.getBoundingClientRect();
     const focusX = event.clientX - (rect.left + rect.width / 2);
     const focusY = event.clientY - (rect.top + rect.height / 2);
-    const nextZoom = Math.max(10, editor.zoom * Math.exp(-event.deltaY * 0.002));
+    const nextZoom = Math.max(
+      10,
+      editor.zoom * Math.exp(-event.deltaY * 0.002),
+    );
     const ratio = nextZoom / editor.zoom;
     dispatch(actions.setZoom(nextZoom));
     setCanvasPan({
@@ -249,7 +257,10 @@ function App() {
     setMobilePhotoPercent(
       Math.max(
         22,
-        Math.min(72, drag.startPercent + ((event.clientY - drag.startY) / height) * 100),
+        Math.min(
+          72,
+          drag.startPercent + ((event.clientY - drag.startY) / height) * 100,
+        ),
       ),
     );
   };
@@ -264,13 +275,22 @@ function App() {
     if (!node) return undefined;
     const getTouches = (event) => Array.from(event.touches).slice(0, 2);
     const startTouch = (event) => {
-      if (editor.activeTool === "crop" || editor.activeTool === "retouch") return;
+      if (editor.activeTool === "crop" || editor.activeTool === "retouch")
+        return;
       const target = event.target;
       if (!(target instanceof Element) || !target.closest(".workbench")) return;
-      if (target.closest(".layer-transform-box, .layer-resize-handle, .layer-rotate-handle, .text-drag-handle, .on-canvas-text-editor, input, button")) return;
+      if (
+        target.closest(
+          ".layer-transform-box, .layer-resize-handle, .layer-rotate-handle, .text-drag-handle, .on-canvas-text-editor, input, button",
+        )
+      )
+        return;
       const touches = getTouches(event);
       const rect = node.getBoundingClientRect();
-      const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      const center = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
       if (touches.length === 1) {
         const touch = touches[0];
         touchGesture.current = {
@@ -279,15 +299,23 @@ function App() {
           startY: touch.clientY,
           panX: canvasPan.x,
           panY: canvasPan.y,
-          panAllowed: Boolean(target.closest(".preview-image, .canvas-grid, .workbench")),
+          panAllowed: Boolean(
+            target.closest(".preview-image, .canvas-grid, .workbench"),
+          ),
           moved: false,
         };
       } else if (touches.length === 2) {
         const [a, b] = touches;
-        const midpoint = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+        const midpoint = {
+          x: (a.clientX + b.clientX) / 2,
+          y: (a.clientY + b.clientY) / 2,
+        };
         touchGesture.current = {
           mode: "pinch",
-          distance: Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)),
+          distance: Math.max(
+            1,
+            Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+          ),
           zoom: editor.zoom,
           originX: midpoint.x - center.x,
           originY: midpoint.y - center.y,
@@ -303,9 +331,18 @@ function App() {
       const touches = getTouches(event);
       if (gesture.mode === "pinch" && touches.length >= 2) {
         const [a, b] = touches;
-        const midpoint = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
-        const distance = Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY));
-        const nextZoom = Math.max(10, gesture.zoom * distance / gesture.distance);
+        const midpoint = {
+          x: (a.clientX + b.clientX) / 2,
+          y: (a.clientY + b.clientY) / 2,
+        };
+        const distance = Math.max(
+          1,
+          Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+        );
+        const nextZoom = Math.max(
+          10,
+          (gesture.zoom * distance) / gesture.distance,
+        );
         const ratio = nextZoom / gesture.zoom;
         const rect = node.getBoundingClientRect();
         const focusX = midpoint.x - (rect.left + rect.width / 2);
@@ -316,7 +353,11 @@ function App() {
           y: focusY - (gesture.originY - gesture.panY) * ratio,
         });
         event.preventDefault();
-      } else if (gesture.mode === "pan" && touches.length === 1 && gesture.panAllowed) {
+      } else if (
+        gesture.mode === "pan" &&
+        touches.length === 1 &&
+        gesture.panAllowed
+      ) {
         const touch = touches[0];
         const dx = touch.clientX - gesture.startX;
         const dy = touch.clientY - gesture.startY;
@@ -529,11 +570,21 @@ function App() {
           return;
         }
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !editing && canEditPhoto) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === "z" &&
+        !editing &&
+        canEditPhoto
+      ) {
         e.preventDefault();
         dispatch(e.shiftKey ? actions.redo() : actions.undo());
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y" && !editing && canEditPhoto) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.key.toLowerCase() === "y" &&
+        !editing &&
+        canEditPhoto
+      ) {
         e.preventDefault();
         dispatch(actions.redo());
       }
@@ -726,7 +777,11 @@ function App() {
                   dispatch(actions.setTool(tool.id));
                   if (mobileLayout === "photo") setMobileLayout("balanced");
                 }}
-                title={!hasPhoto && tool.id !== "projects" ? "Choose a photo to use this tool" : tool.name}
+                title={
+                  !hasPhoto && tool.id !== "projects"
+                    ? "Choose a photo to use this tool"
+                    : tool.name
+                }
               >
                 <Icon name={tool.icon} />
                 <span>{tool.name}</span>
@@ -819,8 +874,10 @@ function App() {
               <button
                 className="zoom-btn"
                 aria-label="Zoom out"
-                  disabled={!hasPhoto}
-                  onClick={() => dispatch(actions.setZoom(Math.max(10, editor.zoom - 10)))}
+                disabled={!hasPhoto}
+                onClick={() =>
+                  dispatch(actions.setZoom(Math.max(10, editor.zoom - 10)))
+                }
               >
                 <Icon name="zoomOut" size={16} />
               </button>
@@ -840,7 +897,7 @@ function App() {
                 className="zoom-btn"
                 aria-label="Zoom in"
                 disabled={!hasPhoto}
-                  onClick={() => dispatch(actions.setZoom(editor.zoom + 10))}
+                onClick={() => dispatch(actions.setZoom(editor.zoom + 10))}
               >
                 <Icon name="zoomIn" size={16} />
               </button>
@@ -1016,6 +1073,23 @@ function App() {
                   />
                 </Suspense>
               )}
+              {editor.activeTool === "retouch" &&
+                !showBefore &&
+                editor.layers.some((layer) => layer.type === "paint") && (
+                  <LayerPreview
+                    snapEnabled={editor.snapEnabled}
+                    onGuides={setGuides}
+                    dimensions={dimensions}
+                    layers={editor.layers.filter(
+                      (layer) => layer.type === "paint",
+                    )}
+                    images={layerImages}
+                    selectedId={null}
+                    onSelect={() => {}}
+                    onMove={() => {}}
+                    interactive={false}
+                  />
+                )}
               {!showBefore &&
                 !cropping &&
                 ["text", "layers"].includes(editor.activeTool) &&
@@ -1087,14 +1161,14 @@ function App() {
                   : "No photo uploaded"}
               </span>
             </div>
-            <label
-              className="replace-image"
-              htmlFor="photo-upload"
-            >
+            <label className="replace-image" htmlFor="photo-upload">
               <Icon name="upload" size={14} /> Replace image
             </label>
           </section>
-          <div className="mobile-history-actions" aria-label="Photo history controls">
+          <div
+            className="mobile-history-actions"
+            aria-label="Photo history controls"
+          >
             <button
               className="mobile-history-action"
               title="Undo (Ctrl+Z)"
@@ -1135,7 +1209,10 @@ function App() {
                 setMobilePhotoPercent((value) =>
                   Math.max(
                     22,
-                    Math.min(72, value + (event.key === "ArrowDown" ? step : -step)),
+                    Math.min(
+                      72,
+                      value + (event.key === "ArrowDown" ? step : -step),
+                    ),
                   ),
                 );
               }}
