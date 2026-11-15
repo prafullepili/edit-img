@@ -547,8 +547,37 @@ input:focus-visible {
   background: #171714db;
   color: #aeada5;
   font-size: 9px;
+  cursor: pointer;
   opacity: 0;
   transition: 0.2s;
+}
+.adjustment-transfer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: -5px 0 14px;
+}
+.adjustment-transfer button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid #35352e;
+  border-radius: 6px;
+  background: #1d1d19;
+  color: #c5c5bb;
+  font-size: 9px;
+}
+.adjustment-transfer button:hover:not(:disabled) {
+  border-color: #718147;
+  color: var(--lime);
+}
+.adjustment-transfer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+.adjustment-transfer span {
+  margin-left: auto;
+  color: var(--lime);
+  font-size: 9px;
 }
 .workbench:hover .replace-image {
   opacity: 1;

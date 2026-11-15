@@ -154,6 +154,10 @@ const slice = createSlice({
       state.adjustments[action.payload.key] = Number(action.payload.value);
       state.preset = "Custom";
     },
+    pasteAdjustments(state, action) {
+      state.adjustments = { ...state.adjustments, ...action.payload };
+      state.preset = "Custom";
+    },
     applyPreset(state, action) {
       state.preset = action.payload.name;
       state.adjustments = { ...state.adjustments, ...action.payload.values };

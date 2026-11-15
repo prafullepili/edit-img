@@ -1,11 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { actions } from "../../store";
 import Icon from "../../components/Icon";
 import Slider from "../../components/Slider";
-import { controlGroups, presets } from "./editorData";
+import { controlGroups } from "./editorData";
+const ADJUSTMENT_CLIPBOARD_KEY = "luma-studio-adjustment-clipboard-v1";
+
 export default function AdjustPanel({ editor, change }) {
   const dispatch = useDispatch();
+  const hasPhoto = Boolean(editor.imageUrl || editor.baseAssetId || editor.isUploaded);
+  const [clipboard, setClipboard] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(ADJUSTMENT_CLIPBOARD_KEY));
+      if (!stored || !Object.keys(editor.adjustments).every((key) => Number.isFinite(Number(stored[key])))) return null;
+      return Object.fromEntries(
+        Object.keys(editor.adjustments).map((key) => [key, Number(stored[key])]),
+      );
+    } catch {
+      return null;
+    }
+  });
+  const [feedback, setFeedback] = useState("");
   const saveSnapshot = () => dispatch(actions.snapshot());
   return (
     <div className="inspector-scroll">
@@ -22,6 +37,34 @@ export default function AdjustPanel({ editor, change }) {
         >
           Reset all
         </button>
+      </div>
+      <div className="adjustment-transfer">
+        <button
+          type="button"
+          disabled={!hasPhoto}
+          onClick={() => {
+            const values = { ...editor.adjustments };
+            try {
+              localStorage.setItem(ADJUSTMENT_CLIPBOARD_KEY, JSON.stringify(values));
+            } catch {}
+            setClipboard(values);
+            setFeedback("Copied");
+          }}
+        >
+          Copy adjustments
+        </button>
+        <button
+          type="button"
+          disabled={!hasPhoto || !clipboard}
+          onClick={() => {
+            saveSnapshot();
+            dispatch(actions.pasteAdjustments(clipboard));
+            setFeedback("Pasted");
+          }}
+        >
+          Paste adjustments
+        </button>
+        <span role="status" aria-live="polite">{feedback}</span>
       </div>
       {controlGroups.map((group) => (
         <section className="control-group" key={group.title}>

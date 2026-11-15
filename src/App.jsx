@@ -796,6 +796,15 @@ function App() {
                 </svg>
               </button>
               <button
+                className="canvas-action mobile-only"
+                aria-label="Replace image"
+                title="Replace image"
+                disabled={!hasPhoto}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Icon name="upload" size={15} />
+              </button>
+              <button
                 className={`canvas-action ${showBefore ? "pressed" : ""}`}
                 onPointerDown={() => setShowBefore(true)}
                 onPointerUp={() => setShowBefore(false)}
@@ -1078,12 +1087,12 @@ function App() {
                   : "No photo uploaded"}
               </span>
             </div>
-            <button
+            <label
               className="replace-image"
-              onClick={() => fileRef.current?.click()}
+              htmlFor="photo-upload"
             >
               <Icon name="upload" size={14} /> Replace image
-            </button>
+            </label>
           </section>
           <div className="mobile-history-actions" aria-label="Photo history controls">
             <button
