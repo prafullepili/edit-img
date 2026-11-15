@@ -33,6 +33,7 @@ const ExportDialog = lazy(() => import("./features/export/ExportDialog"));
 const DesignLibrary = lazy(() => import("./features/design/DesignLibrary"));
 const ProjectsPanel = lazy(() => import("./features/projects/ProjectsPanel"));
 const ShortcutGuide = lazy(() => import("./features/projects/ShortcutGuide"));
+const MOBILE_SPLIT_STORAGE_KEY = "luma-studio-phone-split-v1";
 const tools = [
   { id: "projects", name: "Projects", icon: "save" },
   { id: "assets", name: "Assets", icon: "assets" },
@@ -61,7 +62,14 @@ function App() {
   const [showBefore, setShowBefore] = useState(false);
   const [editingTextId, setEditingTextId] = useState(null);
   const [mobileLayout, setMobileLayout] = useState("balanced");
-  const [mobilePhotoPercent, setMobilePhotoPercent] = useState(38);
+  const [mobilePhotoPercent, setMobilePhotoPercent] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(MOBILE_SPLIT_STORAGE_KEY));
+      return Number.isFinite(saved) && saved >= 22 && saved <= 72 ? saved : 38;
+    } catch {
+      return 38;
+    }
+  });
   const [mobilePastEdits, setMobilePastEdits] = useState(false);
   const [toast, setToast] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -90,6 +98,17 @@ function App() {
   useEffect(() => {
     if (editor.activeTool !== "text") setEditingTextId(null);
   }, [editor.activeTool]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          MOBILE_SPLIT_STORAGE_KEY,
+          String(mobilePhotoPercent),
+        );
+      } catch {}
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [mobilePhotoPercent]);
   const cropping = editor.activeTool === "crop";
   const hasPhoto = Boolean(editor.imageUrl || editor.baseAssetId);
   const photoPreview = usePhotoPreview(editor, {
