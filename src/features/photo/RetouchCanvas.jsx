@@ -5,6 +5,26 @@ import { actions } from "../../store";
 import { viewToSource, sourceToView, cropBounds } from "./geometry";
 import { createLiveBrush } from "./liveBrush";
 import { isLayerLocked } from "../../layerEditing";
+import { createPaintLayerCanvas, getLayerScale } from "../../layers";
+
+function compositePaintLayers(ctx, layers, width, height) {
+  for (const layer of layers) {
+    if (layer.type !== "paint" || !layer.visible) continue;
+    const w = (width * layer.width) / 100;
+    const h = (height * layer.height) / 100;
+    const paint = createPaintLayerCanvas(layer, w, h);
+    ctx.save();
+    ctx.translate((width * layer.x) / 100, (height * layer.y) / 100);
+    ctx.rotate((layer.rotation * Math.PI) / 180);
+    const scale = getLayerScale(layer);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = (layer.opacity ?? 100) / 100;
+    ctx.globalCompositeOperation =
+      layer.blend === "normal" ? "source-over" : layer.blend;
+    ctx.drawImage(paint, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+}
 export default function RetouchCanvas({
   editor,
   settings,
@@ -169,7 +189,15 @@ export default function RetouchCanvas({
           if (!activeOverlay.current) {
             canvas.width = image.naturalWidth;
             canvas.height = image.naturalHeight;
-            canvas.getContext("2d").drawImage(image, 0, 0);
+            const context = canvas.getContext("2d");
+            context.drawImage(image, 0, 0);
+            if (settings.tool !== "heal")
+              compositePaintLayers(
+                context,
+                editor.layers,
+                canvas.width,
+                canvas.height,
+              );
             activeOverlay.current = true;
           }
           canvas.style.visibility = "visible";

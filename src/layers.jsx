@@ -200,6 +200,19 @@ function drawPaintStrokes(ctx, strokes, width, height) {
   }
 }
 
+export function createPaintLayerCanvas(layer, width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
+  drawPaintStrokes(
+    canvas.getContext("2d"),
+    layer.strokes,
+    canvas.width,
+    canvas.height,
+  );
+  return canvas;
+}
+
 function PaintLayerPreview({ layer, dimensions }) {
   const canvas = useRef(null);
   useEffect(() => {
@@ -453,15 +466,7 @@ export async function drawLayers(
           h,
         );
       } else if (layer.type === "paint") {
-        const paint = document.createElement("canvas");
-        paint.width = Math.max(1, Math.round(w));
-        paint.height = Math.max(1, Math.round(h));
-        drawPaintStrokes(
-          paint.getContext("2d"),
-          layer.strokes,
-          paint.width,
-          paint.height,
-        );
+        const paint = createPaintLayerCanvas(layer, w, h);
         // Erasing must only clear this transparent paint layer, never the photo below it.
         ctx.drawImage(paint, -w / 2, -h / 2, w, h);
       } else if (["icon", "sticker"].includes(layer.type)) {
