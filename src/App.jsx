@@ -39,7 +39,7 @@ const tools = [
   { id: "assets", name: "Assets", icon: "assets" },
   { id: "adjust", name: "Adjust", icon: "sliders" },
   { id: "crop", name: "Crop", icon: "crop" },
-  { id: "background", name: "Cutout", icon: "image" },
+  { id: "background", name: "Remove BG", icon: "image" },
   { id: "retouch", name: "Retouch", icon: "wand" },
   { id: "tone", name: "Tone", icon: "sun" },
   { id: "color", name: "Color", icon: "sparkle" },
