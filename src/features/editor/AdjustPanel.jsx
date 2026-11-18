@@ -30,7 +30,7 @@ export default function AdjustPanel({ editor, change, onChangeStart }) {
         </span>
         <button
           onClick={() => {
-            dispatch(actions.reset());
+            dispatch(actions.resetCurrent());
           }}
         >
           Reset all

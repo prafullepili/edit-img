@@ -1,3 +1,4 @@
+import HistoryPanel from "./features/editor/HistoryPanel";
 import { requestLayerDeletion } from "./features/editor/layerDeletion";
 import { newId } from "./ids.js";
 import React, {
@@ -27,6 +28,9 @@ const PresetsPanel = lazy(() => import("./features/editor/PresetsPanel"));
 const CropPanel = lazy(() => import("./features/photo/CropPanel"));
 const CropOverlay = lazy(() => import("./features/photo/CropOverlay"));
 const PhotoPanel = lazy(() => import("./features/photo/PhotoPanel"));
+const BackgroundRefinement = lazy(
+  () => import("./features/photo/BackgroundRefinement"),
+);
 const RetouchCanvas = lazy(() => import("./features/photo/RetouchCanvas"));
 const ExportDialog = lazy(() => import("./features/export/ExportDialog"));
 
@@ -731,10 +735,12 @@ function App() {
           <span className="top-separator" />
           <button
             className="button subtle reset-button"
+            title="Restore original image and clear all edits (undoable)"
             disabled={!hasPhoto}
             onClick={() => {
               dispatch(actions.reset());
-              announce("Adjustments reset.");
+              setCanvasPan({ x: 0, y: 0 });
+              announce("Original image restored. Undo brings back your edits.");
             }}
           >
             <Icon name="reset" size={15} /> Reset
@@ -860,7 +866,22 @@ function App() {
               </button>
               <button
                 className={`canvas-action ${showBefore ? "pressed" : ""}`}
-                onPointerDown={() => setShowBefore(true)}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setShowBefore(true);
+                }}
+                onPointerCancel={() => setShowBefore(false)}
+                onLostPointerCapture={() => setShowBefore(false)}
+                onBlur={() => setShowBefore(false)}
+                onKeyDown={(event) => {
+                  if ([" ", "Enter"].includes(event.key)) {
+                    event.preventDefault();
+                    setShowBefore(true);
+                  }
+                }}
+                onKeyUp={() => setShowBefore(false)}
+                style={{ touchAction: "none" }}
+                aria-label="Hold to compare with original"
                 onPointerUp={() => setShowBefore(false)}
                 onPointerLeave={() => setShowBefore(false)}
                 title="Hold to compare with original"
@@ -1056,6 +1077,20 @@ function App() {
                     }
                   />
                 ))}
+              {editor.activeTool === "background" &&
+                editor.baseAssetId &&
+                retouch.refineMode &&
+                retouch.refineMode !== "off" &&
+                !showBefore && (
+                  <Suspense fallback={null}>
+                    <BackgroundRefinement
+                      key={editor.baseAssetId + retouch.refineMode}
+                      editor={editor}
+                      settings={retouch}
+                      announce={announce}
+                    />
+                  </Suspense>
+                )}
               {editor.activeTool === "retouch" && !showBefore && (
                 <Suspense fallback={null}>
                   <RetouchCanvas
@@ -1064,6 +1099,7 @@ function App() {
                     setSettings={setRetouch}
                     previewImageRef={previewImageRef}
                     renderedPhoto={photoPreview.renderedPhoto}
+                    layerImages={layerImages}
                     previewUrl={photoPreview.url}
                     sampleCanvas={photoPreview.sampleCanvas}
                     sourceWidth={photoPreview.sourceWidth}
@@ -1299,10 +1335,10 @@ function App() {
             {(editor.imageUrl || editor.baseAssetId) && (
               <button
                 className="more-button"
-                title="Reset all adjustments"
+                title="Reset current tool or selected layer appearance"
                 onClick={() => {
-                  dispatch(actions.reset());
-                  announce("Adjustments reset.");
+                  dispatch(actions.resetCurrent());
+                  announce("Current tool reset.");
                 }}
               >
                 <Icon name="reset" size={17} />
@@ -1314,6 +1350,7 @@ function App() {
               <div className="p-5 text-xs text-[#999b90]">Loading tool…</div>
             }
           >
+            {hasPhoto && <HistoryPanel />}
             {editor.activeTool === "projects" && (
               <ProjectsPanel dimensions={dimensions} announce={announce} />
             )}
@@ -1399,6 +1436,7 @@ function App() {
             working={working}
             download={download}
             onClose={() => setExportOpen(false)}
+            layerImages={layerImages}
             previewUrl={photoPreview.url}
             ready={loaded}
           />

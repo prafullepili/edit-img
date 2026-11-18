@@ -1,5 +1,6 @@
 import SettingRange from "../../components/SettingRange";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { exportImage } from "./exportImage";
 import { useDispatch } from "react-redux";
 import { actions } from "../../store";
 import Icon from "../../components/Icon";
@@ -11,9 +12,33 @@ export default function ExportDialog({
   onClose,
   previewUrl,
   ready,
+  layerImages,
 }) {
   const dispatch = useDispatch();
   const loaded = ready;
+  const [encoded, setEncoded] = useState(null);
+  const [previewError, setPreviewError] = useState("");
+  useEffect(() => {
+    let active = true,
+      url;
+    setEncoded(null);
+    setPreviewError("");
+    const timer = setTimeout(async () => {
+      try {
+        const blob = await exportImage(editor, layerImages);
+        if (!active) return;
+        url = URL.createObjectURL(blob);
+        setEncoded({ url, size: blob.size });
+      } catch {
+        if (active) setPreviewError("Could not prepare export preview.");
+      }
+    }, 350);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [editor, layerImages]);
   return (
     <div className="modal-backdrop" onClick={() => onClose()}>
       <section
@@ -37,12 +62,29 @@ export default function ExportDialog({
           </button>
         </div>
         <div className="export-preview">
-          <img src={previewUrl || editor.imageUrl} alt="Export preview" />
+          <img
+            src={encoded?.url || previewUrl || editor.imageUrl}
+            style={{
+              background:
+                "repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 0 / 12px 12px",
+            }}
+            alt="Export preview"
+          />
           <div>
             <strong>{editor.imageName.replace(/\.[^.]+$/, "")}-luma</strong>
             <span>Current crop · All visible layers</span>
           </div>
         </div>
+        <p className="my-2 text-xs" role="status">
+          {previewError ||
+            (encoded
+              ? `Estimated file size: ${(encoded.size / 1024).toFixed(1)} KB`
+              : "Preparing export preview…")}{" "}
+          ·{" "}
+          {editor.exportFormat === "jpeg"
+            ? "Transparency filled with white"
+            : "Transparency preserved"}
+        </p>
         <label className="export-label">FILE FORMAT</label>
         <div className="format-options">
           <button

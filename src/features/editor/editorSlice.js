@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, current } from "@reduxjs/toolkit";
 import { photoDefaults, mergePhoto } from "../photo/defaults";
 import { isLayerLocked, groupTransform } from "../../layerEditing";
 export const STORAGE_KEY = "luma-studio-project-v1";
@@ -241,16 +241,90 @@ const slice = createSlice({
     setLockAspect(state, action) {
       state.lockAspect = action.payload;
     },
+    resetCurrent(state) {
+      const tool = state.activeTool;
+      const layer = state.layers.find(
+        (item) => item.id === state.selectedLayerId,
+      );
+      if (
+        ["layers", "text"].includes(tool) &&
+        layer &&
+        isLayerLocked(layer, state.layers)
+      )
+        return;
+      state.history.push({
+        ...capture(current(state)),
+        historyLabel: `Reset ${tool === "layers" ? "selected layer appearance" : tool}`,
+      });
+      if (state.history.length > HISTORY_LIMIT) state.history.shift();
+      state.future = [];
+      if (tool === "layers") {
+        if (layer)
+          Object.assign(layer, {
+            opacity: 100,
+            rotation: 0,
+            scale: 1,
+            blend: "normal",
+            mask: { enabled: false },
+          });
+        else {
+          state.baseOpacity = 100;
+          state.baseVisible = true;
+        }
+      } else if (tool === "tone") {
+        state.photo.levels = photoDefaults.levels;
+        state.photo.curves = photoDefaults.curves;
+      } else if (tool === "color") {
+        state.photo.hsl = {};
+        state.photo.selective = {};
+      } else if (tool === "detail") {
+        state.photo.sharpen = 0;
+        state.photo.denoise = 0;
+      } else if (tool === "retouch") {
+        if (layer?.type === "paint" && !isLayerLocked(layer, state.layers))
+          layer.strokes = [];
+        else state.photo.strokes = [];
+      } else if (tool === "background") {
+        state.baseAssetId = null;
+      } else if (tool === "crop") {
+        state.cropRatio = "Original";
+        state.freeCrop = null;
+        state.rotation = 0;
+        state.flipX = false;
+        state.flipY = false;
+        state.outputWidth = 0;
+        state.outputHeight = 0;
+      } else if (tool === "resize") {
+        state.outputWidth = 0;
+        state.outputHeight = 0;
+        state.lockAspect = true;
+      } else if (tool === "text") {
+        if (layer?.type === "text" && !isLayerLocked(layer, state.layers))
+          Object.assign(layer, {
+            opacity: 100,
+            blur: 0,
+            outlineWidth: 0,
+            shadow: false,
+            letterSpacing: 0,
+            lineHeight: 1.2,
+          });
+        else if (!layer)
+          state.textLayer = {
+            ...defaults.textLayer,
+            text: state.textLayer.text,
+          };
+      } else {
+        state.adjustments = defaults.adjustments;
+        state.preset = "Original";
+      }
+    },
     reset(state) {
-      const history = [...state.history, capture(state)];
+      const history = [...state.history, { ...capture(current(state)), historyLabel: "Restored original image" }];
       if (history.length > HISTORY_LIMIT) history.shift();
       return {
         ...defaults,
         projectId: state.projectId,
         projectTitle: state.projectTitle,
-        baseAssetId: state.baseAssetId,
-        layers: state.layers,
-        selectedLayerId: state.selectedLayerId,
         snapEnabled: state.snapEnabled,
         imageUrl: state.imageUrl,
         imageName: state.imageName,
@@ -419,14 +493,20 @@ const slice = createSlice({
     undo(state) {
       if (!state.history.length) return;
       const previous = state.history.pop();
-      state.future.unshift(capture(state));
+      state.future.unshift({
+        ...capture(current(state)),
+        historyLabel: previous.historyLabel,
+      });
       if (state.future.length > HISTORY_LIMIT) state.future.pop();
       Object.assign(state, previous);
     },
     redo(state) {
       if (!state.future.length) return;
       const next = state.future.shift();
-      state.history.push(capture(state));
+      state.history.push({
+        ...capture(current(state)),
+        historyLabel: next.historyLabel,
+      });
       if (state.history.length > HISTORY_LIMIT) state.history.shift();
       Object.assign(state, next);
     },
@@ -435,6 +515,49 @@ const slice = createSlice({
       if (state.history.length > HISTORY_LIMIT) state.history.shift();
       state.future = [];
     },
+  },
+  extraReducers: (builder) => {
+    builder.addMatcher(
+      (action) =>
+        /^editor\/(setAdjustment|updateLayer|addLayer|addStroke|setBase|setPhoto|setTextLayer|setDimensions|setFreeCrop|setCropRatio|rotate|flip|applyPreset|removeLayer|deleteLayer|addDesign|setBaseAsset|pasteAdjustments|removeGroup|groupLayers|ungroupLayers|moveLayer|reorderLayer|setLayerLock|restoreVersion|setLockAspect)$/.test(
+          action.type,
+        ),
+      (state, action) => {
+        const entry = state.history.at(-1);
+        if (!entry) return;
+        const kind = action.type.split("/")[1];
+        const field =
+          action.payload?.key ||
+          Object.keys(action.payload?.changes || action.payload || {})[0];
+        const readable = (name) =>
+          String(name || "settings")
+            .replace(/([A-Z])/g, " $1")
+            .toLowerCase();
+        const labels = {
+          addLayer: `Added ${action.payload?.type || "layer"}`,
+          addStroke: `Painted ${action.payload?.tool || "stroke"}`,
+          setBaseAsset: "Changed background",
+          addDesign: "Added design",
+          removeGroup: "Deleted group",
+          groupLayers: "Grouped layers",
+          ungroupLayers: "Ungrouped layers",
+          moveLayer: "Reordered layer",
+          reorderLayer: "Reordered layer",
+          setLayerLock: "Changed layer lock",
+          restoreVersion: "Restored version",
+          setLockAspect: "Changed aspect lock",
+          setDimensions: "Resized output",
+          rotate: "Rotated photo",
+          flip: "Flipped photo",
+          applyPreset: "Applied look",
+          setFreeCrop: "Changed crop",
+          setCropRatio: "Changed crop",
+          removeLayer: "Deleted layer",
+          deleteLayer: "Deleted layer",
+        };
+        entry.historyLabel = labels[kind] || `Changed ${readable(field)}`;
+      },
+    );
   },
 });
 

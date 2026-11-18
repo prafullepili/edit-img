@@ -361,6 +361,47 @@ export default function PhotoPanel({
               </button>
             )}
             <p role="status">{status}</p>
+            {editor.baseAssetId && (
+              <fieldset disabled={busy} className="space-y-3">
+                <h2>Refine edges</h2>
+                <div className="flex gap-2">
+                  {["off", "restore", "erase"].map((mode) => (
+                    <button
+                      key={mode}
+                      className={`button ${retouch.refineMode === mode ? "primary" : ""}`}
+                      onClick={() =>
+                        setRetouch({ ...retouch, refineMode: mode })
+                      }
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+                <Range
+                  label="Refinement size"
+                  min={1}
+                  max={100}
+                  value={retouch.refineSize || 20}
+                  onChange={(refineSize) =>
+                    setRetouch({ ...retouch, refineSize })
+                  }
+                />
+                <Range
+                  label="Edge hardness"
+                  min={0}
+                  max={100}
+                  value={retouch.refineHardness ?? 50}
+                  onChange={(refineHardness) =>
+                    setRetouch({ ...retouch, refineHardness })
+                  }
+                />
+                <p className="text-[10px] text-[#999b90]">
+                  Paint on the photo to restore original pixels or erase the
+                  background. Each stroke can be undone. Refinement works at up
+                  to 4096 pixels.
+                </p>
+              </fieldset>
+            )}
             <button
               className="button w-full"
               disabled={!editor.baseAssetId || busy}

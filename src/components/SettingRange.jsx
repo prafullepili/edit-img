@@ -68,36 +68,66 @@ export default function SettingRange({
           <label htmlFor={id}>{label}</label>
           {info}
         </span>
-        <span className="opacity-value setting-range-value">
-          <input
-            className="opacity-value-input"
-            aria-label={`${label} value`}
-            type="number"
-            inputMode={step < 1 ? "decimal" : "numeric"}
-            min={min}
-            max={max}
-            step={step}
-            value={draft}
-            onFocus={() => {
-              focused.current = true;
-              onStart?.();
-            }}
-            onChange={(event) => {
-              const raw = event.target.value;
-              setDraft(raw);
-              if (raw !== "" && Number.isFinite(Number(raw)))
-                queueValue(normalize(raw));
-            }}
-            onBlur={() => {
+        <span className="flex items-center gap-1">
+          <button
+            type="button"
+            className="px-2 py-1"
+            aria-label={`Decrease ${label}`}
+            disabled={sliderValue <= min}
+            onClick={() => {
               emitter.current.flush();
-              focused.current = false;
-              setDraft(String(Math.round(sliderValue * 100) / 100));
+              onStart?.();
+              queueValue(normalize(sliderValue - step));
+              emitter.current.flush();
             }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
+          >
+            −
+          </button>
+          <span className="opacity-value setting-range-value">
+            <input
+              className="opacity-value-input"
+              aria-label={`${label} value`}
+              type="number"
+              inputMode={step < 1 ? "decimal" : "numeric"}
+              min={min}
+              max={max}
+              step={step}
+              value={draft}
+              onFocus={() => {
+                focused.current = true;
+                onStart?.();
+              }}
+              onChange={(event) => {
+                const raw = event.target.value;
+                setDraft(raw);
+                if (raw !== "" && Number.isFinite(Number(raw)))
+                  queueValue(normalize(raw));
+              }}
+              onBlur={() => {
+                emitter.current.flush();
+                focused.current = false;
+                setDraft(String(Math.round(sliderValue * 100) / 100));
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+              }}
+            />
+            {unit && <span aria-hidden="true">{unit}</span>}
+          </span>
+          <button
+            type="button"
+            className="px-2 py-1"
+            aria-label={`Increase ${label}`}
+            disabled={sliderValue >= max}
+            onClick={() => {
+              emitter.current.flush();
+              onStart?.();
+              queueValue(normalize(sliderValue + step));
+              emitter.current.flush();
             }}
-          />
-          {unit && <span aria-hidden="true">{unit}</span>}
+          >
+            +
+          </button>
         </span>
       </div>
       <div className="setting-range-track">
