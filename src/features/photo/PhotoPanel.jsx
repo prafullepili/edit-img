@@ -387,6 +387,34 @@ export default function PhotoPanel({
                 </div>
               ))}
             </div>
+            {retouch.tool === "eraser" && (
+              <div className="space-y-2 rounded border border-[#393a31] p-2">
+                <p className="text-[10px] text-[#a4a894]">Erase from</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    ["paint", "Brush layer"],
+                    ["photo", "Photo pixels"],
+                  ].map(([target, label]) => (
+                    <button
+                      key={target}
+                      type="button"
+                      className={`button ${retouch.eraserTarget === target ? "primary" : ""}`}
+                      aria-pressed={retouch.eraserTarget === target}
+                      onClick={() =>
+                        setRetouch({ ...retouch, eraserTarget: target })
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] leading-relaxed text-[#999b90]">
+                  Brush layer removes painted marks. Photo pixels removes image
+                  pixels to transparency; use PNG or WebP to preserve it on
+                  export.
+                </p>
+              </div>
+            )}
             <Range
               label="Brush diameter (source pixels)"
               min={2}
@@ -438,8 +466,8 @@ export default function PhotoPanel({
             )}
             <p className="text-[#999b90]">
               Brush strokes go onto a transparent layer above the photo. The
-              eraser clears only brush strokes; healing edits the photo. Each
-              stroke can be undone.
+              eraser can clear brush strokes or erase photo pixels to
+              transparency. Healing edits the photo. Each stroke can be undone.
             </p>
             <button
               className="button w-full"

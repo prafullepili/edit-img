@@ -88,6 +88,7 @@ function App() {
     opacity: 100,
     hardness: 70,
     color: "#ffffff",
+    eraserTarget: "paint",
     source: null,
     picking: false,
   });

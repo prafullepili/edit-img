@@ -79,7 +79,9 @@ export default function RetouchCanvas({
   const append = (p) => {
     const g = gesture.current;
     if (!g) return;
-    const mapped = ["brush", "eraser"].includes(g.tool) ? p : source(p),
+    const paintStroke =
+      g.tool === "brush" || (g.tool === "eraser" && !g.photoEraser);
+    const mapped = paintStroke ? p : source(p),
       last = g.points.at(-1);
     if (mapped.x === last.x && mapped.y === last.y) return;
     g.points.push(mapped);
@@ -95,7 +97,8 @@ export default function RetouchCanvas({
     } else {
       dispatch(actions.snapshot());
       dispatch(actions.addStroke(g));
-      if (g.tool === "heal" && painter.current) pending.current.add(g.id);
+      if ((g.tool === "heal" || g.photoEraser) && painter.current)
+        pending.current.add(g.id);
       else clearOverlay();
     }
     painter.current = null;
@@ -119,6 +122,11 @@ export default function RetouchCanvas({
         const paintLayers = editor.layers.filter(
           (layer) => layer.type === "paint",
         );
+        const paintErase =
+          settings.tool === "eraser" && settings.eraserTarget !== "photo";
+        const photoErase =
+          settings.tool === "eraser" && settings.eraserTarget === "photo";
+        const paintStroke = settings.tool === "brush" || paintErase;
         const paintLayer =
           paintLayers.find(
             (layer) =>
@@ -129,7 +137,7 @@ export default function RetouchCanvas({
             .reverse()
             .find((layer) => !isLayerLocked(layer, editor.layers));
         if (
-          settings.tool === "eraser" &&
+          paintErase &&
           (!paintLayer || isLayerLocked(paintLayer, editor.layers))
         ) {
           announce("Draw on or unlock a brush layer before erasing.");
@@ -152,10 +160,9 @@ export default function RetouchCanvas({
           hardness: settings.hardness / 100,
           radius: settings.size / 2 / sourceWidth,
           source: settings.source,
-          paintLayerId: ["brush", "eraser"].includes(settings.tool)
-            ? paintLayer?.id || newId()
-            : undefined,
-          points: [["brush", "eraser"].includes(settings.tool) ? p : source(p)],
+          photoEraser: photoErase,
+          paintLayerId: paintStroke ? paintLayer?.id || newId() : undefined,
+          points: [paintStroke ? p : source(p)],
         };
         {
           const canvas = overlay.current;
@@ -214,13 +221,12 @@ export default function RetouchCanvas({
           }
           painter.current = createLiveBrush(canvas.getContext("2d"), {
             radius,
-            color: settings.tool === "eraser" ? "#f27070" : settings.color,
-            opacity:
-              settings.tool === "eraser"
-                ? Math.min(0.6, settings.opacity / 100)
-                : settings.opacity / 100,
+            color: paintErase ? "#f27070" : settings.color,
+            opacity: paintErase
+              ? Math.min(0.6, settings.opacity / 100)
+              : settings.opacity / 100,
             hardness: settings.hardness / 100,
-            tool: settings.tool === "eraser" ? "brush" : settings.tool,
+            tool: paintErase ? "brush" : settings.tool,
             ...healing,
           });
           painter.current.start(pixelPoint(p));
