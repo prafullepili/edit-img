@@ -84,18 +84,24 @@ const capture = (state) => ({
   freeCrop: state.freeCrop,
   baseAssetId: state.baseAssetId,
   adjustments: { ...state.adjustments },
+  preset: state.preset,
   cropRatio: state.cropRatio,
   rotation: state.rotation,
   flipX: state.flipX,
   flipY: state.flipY,
+  zoom: state.zoom,
   textLayer: { ...state.textLayer },
   outputWidth: state.outputWidth,
   outputHeight: state.outputHeight,
+  lockAspect: state.lockAspect,
   layers: state.layers.map((layer) => ({ ...layer })),
   selectedLayerId: state.selectedLayerId,
   baseVisible: state.baseVisible,
   baseOpacity: state.baseOpacity,
+  snapEnabled: state.snapEnabled,
 });
+
+const HISTORY_LIMIT = 30;
 
 const slice = createSlice({
   name: "editor",
@@ -236,10 +242,13 @@ const slice = createSlice({
       state.lockAspect = action.payload;
     },
     reset(state) {
+      const history = [...state.history, capture(state)];
+      if (history.length > HISTORY_LIMIT) history.shift();
       return {
         ...defaults,
         projectId: state.projectId,
         projectTitle: state.projectTitle,
+        baseAssetId: state.baseAssetId,
         layers: state.layers,
         selectedLayerId: state.selectedLayerId,
         snapEnabled: state.snapEnabled,
@@ -247,7 +256,7 @@ const slice = createSlice({
         imageName: state.imageName,
         isUploaded: state.isUploaded,
         activeTool: state.activeTool,
-        history: [],
+        history,
         future: [],
       };
     },
@@ -411,17 +420,19 @@ const slice = createSlice({
       if (!state.history.length) return;
       const previous = state.history.pop();
       state.future.unshift(capture(state));
+      if (state.future.length > HISTORY_LIMIT) state.future.pop();
       Object.assign(state, previous);
     },
     redo(state) {
       if (!state.future.length) return;
       const next = state.future.shift();
       state.history.push(capture(state));
+      if (state.history.length > HISTORY_LIMIT) state.history.shift();
       Object.assign(state, next);
     },
     snapshot(state) {
       state.history.push(capture(state));
-      if (state.history.length > 30) state.history.shift();
+      if (state.history.length > HISTORY_LIMIT) state.history.shift();
       state.future = [];
     },
   },

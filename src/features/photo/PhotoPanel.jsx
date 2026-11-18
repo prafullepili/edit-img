@@ -13,6 +13,7 @@ function Range({
   max = 100,
   step = 1,
   onChange,
+  onStart,
 }) {
   return (
     <SettingRange
@@ -22,6 +23,7 @@ function Range({
       max={max}
       step={step}
       onChange={onChange}
+      onStart={onStart}
       info={info ? <InfoTip label={label}>{info}</InfoTip> : null}
     />
   );
@@ -55,7 +57,7 @@ function Histogram({ bins }) {
     </svg>
   );
 }
-function CurveEditor({ values, onChange }) {
+function CurveEditor({ values, onChange, onStart }) {
   const change = (event) => {
     const r = event.currentTarget.getBoundingClientRect(),
       x = ((event.clientX - r.left) / r.width) * 255,
@@ -76,6 +78,7 @@ function CurveEditor({ values, onChange }) {
       className="w-full touch-none rounded border border-[#393a31] bg-[#11120f]"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
+        onStart?.();
         change(e);
       }}
       onPointerMove={(e) => {
@@ -124,9 +127,13 @@ export default function PhotoPanel({
     [band, setBand] = useState("red"),
     [status, setStatus] = useState(""),
     [busy, setBusy] = useState(false);
+  const snapshot = () => dispatch(actions.snapshot());
   const edit = (changes) => {
-    dispatch(actions.snapshot());
     dispatch(actions.setPhoto(changes));
+  };
+  const editOnce = (changes) => {
+    dispatch(actions.snapshot());
+    edit(changes);
   };
   const remove = async () => {
     cancellation.current = new AbortController();
@@ -167,6 +174,7 @@ export default function PhotoPanel({
               min={0}
               max={photo.levels.white - 1}
               value={photo.levels.black}
+              onStart={snapshot}
               onChange={(black) => edit({ levels: { ...photo.levels, black } })}
             />
             <Range
@@ -174,6 +182,7 @@ export default function PhotoPanel({
               min={photo.levels.black + 1}
               max={255}
               value={photo.levels.white}
+              onStart={snapshot}
               onChange={(white) => edit({ levels: { ...photo.levels, white } })}
             />
             <Range
@@ -182,6 +191,7 @@ export default function PhotoPanel({
               max={3}
               step={0.05}
               value={photo.levels.gamma}
+              onStart={snapshot}
               onChange={(gamma) => edit({ levels: { ...photo.levels, gamma } })}
             />
             <h2 className="font-semibold text-[#c8ef69]">Curves</h2>
@@ -197,6 +207,7 @@ export default function PhotoPanel({
             </select>
             <CurveEditor
               values={photo.curves[channel]}
+              onStart={snapshot}
               onChange={(values) =>
                 edit({ curves: { ...photo.curves, [channel]: values } })
               }
@@ -208,6 +219,7 @@ export default function PhotoPanel({
                 min={0}
                 max={255}
                 value={value}
+                onStart={snapshot}
                 onChange={(v) =>
                   edit({
                     curves: {
@@ -223,7 +235,7 @@ export default function PhotoPanel({
             <button
               className="button w-full"
               onClick={() =>
-                edit({
+                editOnce({
                   levels: photoDefaults.levels,
                   curves: photoDefaults.curves,
                 })
@@ -257,6 +269,7 @@ export default function PhotoPanel({
                 min={key === "hue" ? -60 : -100}
                 max={key === "hue" ? 60 : 100}
                 value={photo.hsl[band]?.[key] || 0}
+                onStart={snapshot}
                 onChange={(value) =>
                   edit({
                     hsl: {
@@ -275,6 +288,7 @@ export default function PhotoPanel({
                 key={key}
                 label={`${band}: ${key}`}
                 value={photo.selective[band]?.[key] || 0}
+                onStart={snapshot}
                 onChange={(value) =>
                   edit({
                     selective: {
@@ -287,7 +301,7 @@ export default function PhotoPanel({
             ))}
             <button
               className="button w-full"
-              onClick={() => edit({ hsl: {}, selective: {} })}
+              onClick={() => editOnce({ hsl: {}, selective: {} })}
             >
               Reset selective color & HSL
             </button>
@@ -301,6 +315,7 @@ export default function PhotoPanel({
               min={0}
               max={100}
               value={photo.sharpen}
+              onStart={snapshot}
               onChange={(sharpen) => edit({ sharpen })}
             />
             <Range
@@ -308,6 +323,7 @@ export default function PhotoPanel({
               min={0}
               max={100}
               value={photo.denoise}
+              onStart={snapshot}
               onChange={(denoise) => edit({ denoise })}
             />
             <p className="text-[#999b90]">
@@ -316,7 +332,7 @@ export default function PhotoPanel({
             </p>
             <button
               className="button w-full"
-              onClick={() => edit({ sharpen: 0, denoise: 0 })}
+              onClick={() => editOnce({ sharpen: 0, denoise: 0 })}
             >
               Reset detail
             </button>
@@ -472,7 +488,7 @@ export default function PhotoPanel({
             <button
               className="button w-full"
               disabled={!photo.strokes.length}
-              onClick={() => edit({ strokes: [] })}
+              onClick={() => editOnce({ strokes: [] })}
             >
               Clear all retouching ({photo.strokes.length})
             </button>

@@ -5,6 +5,8 @@ const field = "w-full rounded border border-[#393a31] bg-[#22231e] p-2 text-xs";
 export default function TextEditorControls({
   value,
   onChange,
+  onContinuousChange = onChange,
+  onChangeStart,
   showAlignment = true,
   showOpacity = true,
 }) {
@@ -38,7 +40,8 @@ export default function TextEditorControls({
         min={4}
         max={600}
         unit="px"
-        onChange={(size) => onChange({ size })}
+        onStart={onChangeStart}
+        onChange={(size) => onContinuousChange({ size })}
       />
       {showOpacity && (
         <SettingRange
@@ -47,12 +50,15 @@ export default function TextEditorControls({
           min={0}
           max={100}
           unit="%"
-          onChange={(opacity) => onChange({ opacity })}
+          onStart={onChangeStart}
+          onChange={(opacity) => onContinuousChange({ opacity })}
         />
       )}
       <TextControls
         value={value}
         onChange={onChange}
+        onContinuousChange={onContinuousChange}
+        onChangeStart={onChangeStart}
         showAlignment={showAlignment}
       />
     </div>

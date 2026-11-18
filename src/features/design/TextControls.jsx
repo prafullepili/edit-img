@@ -5,6 +5,8 @@ const field = "w-full rounded border border-[#393a31] bg-[#22231e] p-2 text-xs";
 export default function TextControls({
   value,
   onChange,
+  onContinuousChange = onChange,
+  onChangeStart,
   showAlignment = true,
 }) {
   const s = textStyle(value);
@@ -54,7 +56,8 @@ export default function TextControls({
             max={max}
             step={step}
             unit={unit}
-            onChange={(number) => onChange({ [key]: number })}
+            onStart={onChangeStart}
+            onChange={(number) => onContinuousChange({ [key]: number })}
           />
         ))}
       </div>
@@ -128,7 +131,8 @@ export default function TextControls({
                 min={min}
                 max={max}
                 unit={unit}
-                onChange={(number) => onChange({ [key]: number })}
+                onStart={onChangeStart}
+                onChange={(number) => onContinuousChange({ [key]: number })}
               />
             ))}
           </div>

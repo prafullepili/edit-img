@@ -95,6 +95,9 @@ export default function AutosavedEdits({ onAdd, onOpen, announce }) {
         .then((items) => {
           if (active) {
             setDrafts(items);
+            setDeleted((id) =>
+              id && items.some((draft) => draft.id === id) ? null : id,
+            );
             setError(false);
           }
         })

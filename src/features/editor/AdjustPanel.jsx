@@ -6,7 +6,7 @@ import Slider from "../../components/Slider";
 import { controlGroups } from "./editorData";
 const ADJUSTMENT_CLIPBOARD_KEY = "luma-studio-adjustment-clipboard-v1";
 
-export default function AdjustPanel({ editor, change }) {
+export default function AdjustPanel({ editor, change, onChangeStart }) {
   const dispatch = useDispatch();
   const hasPhoto = Boolean(editor.imageUrl || editor.baseAssetId || editor.isUploaded);
   const [clipboard, setClipboard] = useState(() => {
@@ -21,7 +21,6 @@ export default function AdjustPanel({ editor, change }) {
     }
   });
   const [feedback, setFeedback] = useState("");
-  const saveSnapshot = () => dispatch(actions.snapshot());
   return (
     <div className="inspector-scroll">
       <div className="adjustment-summary">
@@ -31,7 +30,6 @@ export default function AdjustPanel({ editor, change }) {
         </span>
         <button
           onClick={() => {
-            saveSnapshot();
             dispatch(actions.reset());
           }}
         >
@@ -81,6 +79,7 @@ export default function AdjustPanel({ editor, change }) {
               item={item}
               value={editor.adjustments[item[0]]}
               onChange={change}
+              onStart={onChangeStart}
             />
           ))}
         </section>

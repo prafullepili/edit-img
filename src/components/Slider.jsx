@@ -1,6 +1,6 @@
 import React from "react";
 import SettingRange from "./SettingRange";
-export default function Slider({ item, value, onChange }) {
+export default function Slider({ item, value, onChange, onStart }) {
   const [key, label, min, max] = item;
   return (
     <SettingRange
@@ -9,6 +9,7 @@ export default function Slider({ item, value, onChange }) {
       max={max}
       value={value}
       onChange={(number) => onChange(key, number)}
+      onStart={onStart}
     />
   );
 }

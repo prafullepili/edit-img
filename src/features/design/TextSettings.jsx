@@ -6,6 +6,8 @@ export default function TextSettings({
   visible,
   onVisibilityChange,
   onChange,
+  onContinuousChange,
+  onChangeStart,
   onPosition,
 }) {
   return (
@@ -27,6 +29,8 @@ export default function TextSettings({
       <TextEditorControls
         value={value}
         onChange={onChange}
+        onContinuousChange={onContinuousChange}
+        onChangeStart={onChangeStart}
         showAlignment={false}
       />
       <div>

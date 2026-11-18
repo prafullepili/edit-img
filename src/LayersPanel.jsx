@@ -44,9 +44,9 @@ export default function LayersPanel({ dimensions, announce }) {
     inverted: false,
     ...selected?.mask,
   };
-  const editMask = (changes) =>
-    edit(selected.id, { mask: { ...mask, ...changes } });
-  const edit = (id, changes) => {
+  const editMask = (changes, withSnapshot = true) =>
+    edit(selected.id, { mask: { ...mask, ...changes } }, withSnapshot);
+  const edit = (id, changes, withSnapshot = true) => {
     if (
       isLayerLocked(
         e.layers.find((l) => l.id === id),
@@ -54,7 +54,7 @@ export default function LayersPanel({ dimensions, announce }) {
       )
     )
       return;
-    dispatch(actions.snapshot());
+    if (withSnapshot) dispatch(actions.snapshot());
     dispatch(
       actions.updateLayer({
         id,
@@ -73,10 +73,10 @@ export default function LayersPanel({ dimensions, announce }) {
     );
   };
   const zoom = selected ? Math.round(getLayerScale(selected) * 100) : 100;
-  const setZoom = (value) =>
+  const setZoom = (value, withSnapshot = true) =>
     edit(selected.id, {
       scale: Math.max(10, Math.min(400, Number(value) || 100)) / 100,
-    });
+    }, withSnapshot);
   const add = (type, extra = {}) => {
     dispatch(actions.snapshot());
     dispatch(
@@ -673,7 +673,10 @@ export default function LayersPanel({ dimensions, announce }) {
                           step={0.1}
                           unit="%"
                           value={mask[key]}
-                          onChange={(number) => editMask({ [key]: number })}
+                          onStart={() => dispatch(actions.snapshot())}
+                          onChange={(number) =>
+                            editMask({ [key]: number }, false)
+                          }
                         />
                       ))}
                     </div>
@@ -699,7 +702,8 @@ export default function LayersPanel({ dimensions, announce }) {
                   max={400}
                   unit="%"
                   value={zoom}
-                  onChange={setZoom}
+                  onStart={() => dispatch(actions.snapshot())}
+                  onChange={(value) => setZoom(value, false)}
                 />
                 <button
                   className={`${buttonClass} w-full`}
@@ -716,6 +720,10 @@ export default function LayersPanel({ dimensions, announce }) {
                 <ShapeControls
                   value={selected}
                   onChange={(changes) => edit(selected.id, changes)}
+                  onChangeStart={() => dispatch(actions.snapshot())}
+                  onContinuousChange={(changes) =>
+                    edit(selected.id, changes, false)
+                  }
                 />
               )}
               {["icon", "sticker"].includes(selected.type) && (
@@ -789,11 +797,16 @@ export default function LayersPanel({ dimensions, announce }) {
                     max={200}
                     unit="px"
                     value={selected.borderWidth ?? 4}
+                    onStart={() => dispatch(actions.snapshot())}
                     onChange={(borderWidth) =>
-                      edit(selected.id, {
-                        borderWidth,
-                        borderEnabled: borderWidth > 0,
-                      })
+                      edit(
+                        selected.id,
+                        {
+                          borderWidth,
+                          borderEnabled: borderWidth > 0,
+                        },
+                        false,
+                      )
                     }
                   />
                   <p className="text-[9px] leading-relaxed text-[#a4a894]">
@@ -818,7 +831,10 @@ export default function LayersPanel({ dimensions, announce }) {
                     step={0.1}
                     unit={key === "rotation" ? "°" : "%"}
                     value={Math.round(selected[key] * 10) / 10}
-                    onChange={(number) => edit(selected.id, { [key]: number })}
+                    onStart={() => dispatch(actions.snapshot())}
+                    onChange={(number) =>
+                      edit(selected.id, { [key]: number }, false)
+                    }
                   />
                 ))}
               </div>

@@ -480,7 +480,6 @@ function App() {
   );
 
   const change = (key, value) => {
-    saveSnapshot();
     dispatch(
       actions.setAdjustment({
         key,
@@ -715,7 +714,7 @@ function App() {
             className="icon-button history-button"
             title="Undo (Ctrl+Z)"
             aria-label="Undo"
-            disabled={!hasPhoto}
+            disabled={!hasPhoto || editor.history.length === 0}
             onClick={() => dispatch(actions.undo())}
           >
             <Icon name="undo" />
@@ -724,7 +723,7 @@ function App() {
             className="icon-button history-button"
             title="Redo (Ctrl+Shift+Z)"
             aria-label="Redo"
-            disabled={!hasPhoto}
+            disabled={!hasPhoto || editor.future.length === 0}
             onClick={() => dispatch(actions.redo())}
           >
             <Icon name="redo" />
@@ -734,7 +733,6 @@ function App() {
             className="button subtle reset-button"
             disabled={!hasPhoto}
             onClick={() => {
-              saveSnapshot();
               dispatch(actions.reset());
               announce("Adjustments reset.");
             }}
@@ -1174,7 +1172,7 @@ function App() {
               className="mobile-history-action"
               title="Undo (Ctrl+Z)"
               aria-label="Undo"
-              disabled={!hasPhoto}
+              disabled={!hasPhoto || editor.history.length === 0}
               onClick={() => dispatch(actions.undo())}
             >
               <Icon name="undo" size={16} />
@@ -1183,7 +1181,7 @@ function App() {
               className="mobile-history-action"
               title="Redo (Ctrl+Shift+Z)"
               aria-label="Redo"
-              disabled={!hasPhoto}
+              disabled={!hasPhoto || editor.future.length === 0}
               onClick={() => dispatch(actions.redo())}
             >
               <Icon name="redo" size={16} />
@@ -1303,7 +1301,6 @@ function App() {
                 className="more-button"
                 title="Reset all adjustments"
                 onClick={() => {
-                  saveSnapshot();
                   dispatch(actions.reset());
                   announce("Adjustments reset.");
                 }}
@@ -1339,7 +1336,11 @@ function App() {
               <AdvancedPanel type={editor.activeTool} dimensions={dimensions} />
             )}
             {editor.activeTool === "adjust" && (
-              <AdjustPanel editor={editor} change={change} />
+              <AdjustPanel
+                editor={editor}
+                change={change}
+                onChangeStart={saveSnapshot}
+              />
             )}
             {editor.activeTool === "crop" && <CropPanel />}
             {editor.activeTool === "presets" && (

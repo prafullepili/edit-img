@@ -22,9 +22,8 @@ export default function AdvancedPanel({ type, dimensions }) {
         textAlign: e.textLayer.textAlign || e.textLayer.position.split("-")[1],
       };
   const locked = selectedText && isLayerLocked(selectedText, e.layers);
-  const update = (payload) => {
+  const applyTextUpdate = (payload) => {
     if (locked) return;
-    dispatch(actions.snapshot());
     dispatch(
       selectedText
         ? actions.updateLayer({
@@ -35,11 +34,15 @@ export default function AdvancedPanel({ type, dimensions }) {
         : actions.setTextLayer({ enabled: true, ...payload }),
     );
   };
+  const update = (payload) => {
+    if (locked) return;
+    dispatch(actions.snapshot());
+    applyTextUpdate(payload);
+  };
   const resize = (key, value) => {
     const size = Math.max(1, Math.min(8192, Number(value) || 1));
     const width = e.outputWidth || dimensions.width,
       height = e.outputHeight || dimensions.height;
-    dispatch(actions.snapshot());
     dispatch(
       actions.setDimensions(
         key === "width"
@@ -92,6 +95,8 @@ export default function AdvancedPanel({ type, dimensions }) {
                   update(selectedText ? { visible } : { enabled: visible })
                 }
                 onChange={update}
+                onContinuousChange={applyTextUpdate}
+                onChangeStart={() => dispatch(actions.snapshot())}
                 onPosition={(vertical, horizontal) =>
                   update(
                     textPositionChanges(
@@ -124,6 +129,7 @@ export default function AdvancedPanel({ type, dimensions }) {
                     e[`output${key[0].toUpperCase() + key.slice(1)}`] ||
                     dimensions[key]
                   }
+                  onStart={() => dispatch(actions.snapshot())}
                   onChange={(number) => resize(key, number)}
                 />
               ))}
@@ -134,9 +140,10 @@ export default function AdvancedPanel({ type, dimensions }) {
                 className="accent-[#c8ef69]"
                 type="checkbox"
                 checked={e.lockAspect}
-                onChange={(x) =>
-                  dispatch(actions.setLockAspect(x.target.checked))
-                }
+                onChange={(x) => {
+                  dispatch(actions.snapshot());
+                  dispatch(actions.setLockAspect(x.target.checked));
+                }}
               />
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -160,9 +167,10 @@ export default function AdvancedPanel({ type, dimensions }) {
             </div>
             <button
               className="w-full rounded-md border border-[#687848] bg-[#29321f] py-3 text-[#d9edaa]"
-              onClick={() =>
-                dispatch(actions.setDimensions({ width: 0, height: 0 }))
-              }
+              onClick={() => {
+                dispatch(actions.snapshot());
+                dispatch(actions.setDimensions({ width: 0, height: 0 }));
+              }}
             >
               Use original crop dimensions
             </button>

@@ -1,7 +1,12 @@
 import React from "react";
 import SettingRange from "../../components/SettingRange";
 const field = "w-full rounded border border-[#393a31] bg-[#22231e] p-2 text-xs";
-export default function ShapeControls({ value, onChange }) {
+export default function ShapeControls({
+  value,
+  onChange,
+  onContinuousChange = onChange,
+  onChangeStart,
+}) {
   const g = {
     enabled: false,
     type: "linear",
@@ -61,7 +66,10 @@ export default function ShapeControls({ value, onChange }) {
               max={360}
               unit="°"
               value={g.angle}
-              onChange={(angle) => edit({ angle })}
+              onStart={onChangeStart}
+              onChange={(angle) =>
+                onContinuousChange({ gradient: { ...g, angle } })
+              }
             />
           )}
         </>
@@ -73,7 +81,10 @@ export default function ShapeControls({ value, onChange }) {
           max={500}
           unit="px"
           value={value.cornerRadius || 0}
-          onChange={(cornerRadius) => onChange({ cornerRadius })}
+          onStart={onChangeStart}
+          onChange={(cornerRadius) =>
+            onContinuousChange({ cornerRadius })
+          }
         />
       )}
     </fieldset>
